@@ -1,0 +1,14 @@
+#PURPOSE	SCRIPT
+Generate RS-FISH Bash Wrappers/Jobs	test_prep_rsfish_230126.m
+Generate DeepBlink Bash Wrappers/Jobs	test_prep_deepblink_230203.m
+Generate TrueSpot & Big-FISH Bash Wrappers/Jobs	test_tbl2bash_221115.m
+Convert Sim-FISH output to tif	test_importsimimg_221007.m
+Big-FISH import/comparison functions	BigfishCompare.m
+Result file import/generation	test_coordcleanup_230417.m
+Spot annotation	test_launch_spotanno_221116.m,spotpickscript_v2.m
+Render curve plots	run_dump_indivplots_230503.m
+Dump simulated data to table	run_dump_allsim_230424.m
+Dump experimental data to table Dump_expResultStats.m,bp_fullset_230612.m
+Dump sc timecourse data to table	Dump_sctcStats.m,bp_fullset_230612.m
+Dump threshold selections to table	Dump_ThreshTable.m
+Prep sim training set for DeepBlink	test_gen_simmdl_deepblink_230524.m
