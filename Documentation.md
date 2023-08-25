@@ -1,6 +1,8 @@
 # Analysis Documentation
 The purpose of this document is to describe in greater detail the specific methods, scripts, and data used and produced during benchmarking.
 
+**IMPORTANT:** The channel labels for all yeast STL1 and CTT1 images got swapped at some point and are backwards in `test_images.csv`. Their results files are also mislabeled. Anything labeled STL1-TMR is actually CTT1-CY5 and vice versa. If in doubt, double check the channel index - channel 1 SHOULD be CTT1-CY5 and channel 2 SHOULD be STL1-TMR. This was accounted for in the data analyses (corrected labels are used in all data tables save in image names).
+
 ## Simulated Image Generation
 This section describes how simulated images were generated using Sim-FISH (link to simfish here).
 
@@ -123,14 +125,31 @@ DeepBlink outputs a single csv coordinate table per run. Table columns are x, y,
 
 As with Big-FISH and RS-FISH, the coordinate table is imported, rounded, and stored in a `.mat` file once DeepBlink is done running (`${TrueSpot_Repo}/Main_DeepBlink2Mat.m`). However, since there is only 1 csv file, it is not removed. This csv file is used directly to check subpixel fitting.
 
-Results file consolidation is performed by `test_coordcleanup_230417.m` and `${TrueSpot_Repo}/core/RNACoords.m`, however unlike the other three tools, an extra step is required to make callsets comparable to truthsets or other callsets. DeepBlink operates in 2D, slice by slice. So while the output table includes z coordinates, there are a lot of redundant calls between slices resulting in an inflation in apparent false positives. 
-
+Results file consolidation is performed by `test_coordcleanup_230417.m` and `${TrueSpot_Repo}/core/RNACoords.m`, however unlike the other three tools, an extra step is required to make callsets comparable to truthsets or other callsets. DeepBlink operates in 2D, slice by slice. So while the output table includes z coordinates, there are a lot of redundant calls between slices resulting in an inflation in apparent false positives. The by-slice callsets were perserved in the composite results files, but 2D to 3D merging was performed (see `RNACoords.mergeSlicedSetTo3D`) to produce a 3D compatible callset.
 
 ## Truthset Handling
 This section describes the generation and storage of truth sets, both for sim images and for experimental images.
 
+### Sim-FISH Truthset Storage
+
+### RS-FISH Benchmarking Set Truthset Storage
+
+### Experimental Image Reference Set Generation
+
 ## Data Organization
 This section describes how data were dumped from binary `mat` files storing detailed results to analysis-specific tables.
+
+### Composite Result File Contents
+
+### Simulated Image Summary Table
+
+### Experimental Image Summary Table
+
+### Threshold Call Table
+
+### Li & Neuert 2019 Data Dump Table
+
+### Time Course Recount Export
 
 ## Statistics
 This section describes how statistical tests were run for applicable analyses.
