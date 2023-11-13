@@ -14,13 +14,15 @@ The `scripts` subdirectory contains code used for running tools for benchmarking
 Large data files and file collections used for benchmarking are not hosted in this repo due to their size. Instead, we provide links for them here.
 
 ### Image Stacks
-* Yeast time course (Li & Neuert 2019)
+* [Yeast time course](https://doi.org/10.17867/10000118) [(Li & Neuert 2019)](https://www.nature.com/articles/s41597-019-0106-6)
 * Yeast Msb2-GFP & Opy2-GFP (cite)
-* mESC Xist, Tsix, & Histone (tbp)
+* mESC Xist, Tsix, & Histone (cite)
 * Munsky lab HeLa images (cite)
 * Neuert lab simulated images
 * RS-FISH benchmarking set
 * Misc. experimental images
+
+### Experimental Image Manual Reference Sets
 
 ### By-Image Results (Callset) Composite Files
 

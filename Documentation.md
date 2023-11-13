@@ -4,7 +4,7 @@ The purpose of this document is to describe in greater detail the specific metho
 **IMPORTANT:** The channel labels for all yeast STL1 and CTT1 images got swapped at some point and are backwards in `test_images.csv`. Their results files are also mislabeled. Anything labeled STL1-TMR is actually CTT1-CY5 and vice versa. If in doubt, double check the channel index - channel 1 SHOULD be CTT1-CY5 and channel 2 SHOULD be STL1-TMR. This was accounted for in the data analyses (corrected labels are used in all data tables save in image names).
 
 ## Simulated Image Generation
-This section describes how simulated images were generated using Sim-FISH (link to simfish here).
+This section describes how simulated images were generated using [Sim-FISH](https://github.com/fish-quant/sim-fish).
 
 ### Common
 Sim-FISH mostly utilizes numpy arrays, so it was easier to just ask it to dump 2D arrays to csv files. The Sim-FISH wrapper scripts output a key csv with the z,y,x coordinates of the ground truth spots (0-based), along with the image stack as a series of csv files - one for each z slice. MATLAB scripts were used to import all of these tables and output the image to both `.mat` (with key included) and `.tif`. In some cases, this import script added additional filters to the simulated image. In these cases, the additional filters are briefly described. Ground truth spot coordinates were converted from 0-based to 1-based since most downstream analysis would be with MATLAB.
@@ -36,6 +36,8 @@ Cell segmentation for experimental images was conducted once using the GUI versi
 TrueSpot was run from the command line (via `Main_RNASpots.m`) on the ACCRE cluster. Each image channel was assigned its own slurm job and resources so that multiple channels could be processed in parallel (TrueSpot's spot detection itself can be further parallelized). The bash scripts for each slurm job and the script that submitted the jobs were genereated by `test_tbl2bash_221115.m` (along with Big-FISH job scripts). Variables at the top of the script determine which images are pulled and which runs are included.
 
 We used MATLAB 2018b for these runs to ensure some degree of backward compatilibity, but it appears to work on versions at least up to 2022a (probably works on newer, just haven't tested).
+
+Additionally, an older version of TrueSpot from early 2023 was used rather than the version available in the repository upon initial release. The only changes made were code organization and formatting of the tool's data output since the debug version outputs were extremely messy. Nothing was changed in the internal algorithms or pipeline flow.
 
 ### Spot Fitting -- TrueSpot
 The spot fitting/quantification module was separate from the spot detection module when we did these runs. The script generation for fitting was also handled by `test_tbl2bash_221115.m` (if "quant" is requested), but TrueSpot's fitting module was called via `Main_RNAQuant.m`.
@@ -109,21 +111,21 @@ The conversion and import into the individual image results files is handled by 
 As spot fitting/quantification is handled by a separate module, the output file is also separate. Importing of subpixel fits to image results master files and matching to reference/spot calls is handled by `test_importHBFits_230424.m` and `${TrueSpot_Repo}/core/RNACoords.m`.
 
 ### Call Consolidation & Import -- Big-FISH
-The Big-FISH wrapper script (`scripts/Wrappers/bigfish_wrapper.py`) outputs z,y,x coordinate lists as csv files, along with a short summary file that notes the auto-selected threshold and the z slices that were included in detection. Big-FISH's functions handle automated threshold selection internally without sharing coordinate lists at each threshold, so the wrapper script runs an explicit loop through every threshold to dump its callset to a csv. Because the scan range is often around 900-ish threshold values, this creates a lot of files. Because moving large quantities of even small files around is messy and time consuming, the csvs are imported, merged, and cleaned up automatically at the end of the cluster job via `${TrueSpot_Repo}/Main_Bigfish2Mat.m`. This process converts all coordinates to 1-based coordinates and saves the callsets for each threshold together in a single `.mat` file.
+The Big-FISH wrapper script (`scripts/Wrappers/bigfish_wrapper.py`) outputs z,y,x coordinate lists as csv files, along with a short summary file that notes the auto-selected threshold and the z slices that were included in detection. Big-FISH's functions handle automated threshold selection internally without sharing coordinate lists at each threshold, so the wrapper script runs an explicit loop through every threshold to dump its callset to a csv. Because the scan range is often around 900-ish threshold values, this creates a lot of files. Because moving large quantities of even small files around is messy and time consuming, the csvs are imported, merged, and cleaned up automatically at the end of the cluster job via `Main_Bigfish2Mat.m`. This process converts all coordinates to 1-based coordinates and saves the callsets for each threshold together in a single `.mat` file.
 
 The raw csvs for each threshold are deleted by `Main_Bigfish2Mat.m`, but the csv containing the subpixel fits (for auto-selected threshold only) is left alone.
 
 As with TrueSpot, the consolidation of the per-threshold callsets, import into the composite results files, comparison against truthsets, and import of subpixel fits is handled by `test_coordcleanup_230417.m` and `${TrueSpot_Repo}/core/RNACoords.m`.
 
 ### Call Consolidation & Import -- RS-FISH
-RS-FISH also outputs csv 0-based coordinate lists for each run. The output is subpixel-fitted, so additional fitting does not need to be performed. As the bash wrapper calls RS-FISH repeatedly to try different DoG threshold values, a coordinate file is produced for each threshold tried. Once all threshold files are generated, `${TrueSpot_Repo}/Main_RSFish2Mat.m` is used to merge these files, convert coordinates, and save to a pair of `.mat` files (one with subpixel fits, one with rounded coordinates). The raw output csvs are deleted.
+RS-FISH also outputs csv 0-based coordinate lists for each run. The output is subpixel-fitted, so additional fitting does not need to be performed. As the bash wrapper calls RS-FISH repeatedly to try different DoG threshold values, a coordinate file is produced for each threshold tried. Once all threshold files are generated, `Main_RSFish2Mat.m` is used to merge these files, convert coordinates, and save to a pair of `.mat` files (one with subpixel fits, one with rounded coordinates). The raw output csvs are deleted.
 
 Like all other tools, consolidation and import into composite results files is done using `test_coordcleanup_230417.m` and `${TrueSpot_Repo}/core/RNACoords.m`.
 
 ### Call Consolidation & Import -- DeepBlink
 DeepBlink outputs a single csv coordinate table per run. Table columns are x, y, call probability, z (for 3D images). Coordinates are 0-based and subpixel fitted (in x and y).
 
-As with Big-FISH and RS-FISH, the coordinate table is imported, rounded, and stored in a `.mat` file once DeepBlink is done running (`${TrueSpot_Repo}/Main_DeepBlink2Mat.m`). However, since there is only 1 csv file, it is not removed. This csv file is used directly to check subpixel fitting.
+As with Big-FISH and RS-FISH, the coordinate table is imported, rounded, and stored in a `.mat` file once DeepBlink is done running (`Main_DeepBlink2Mat.m`). However, since there is only 1 csv file, it is not removed. This csv file is used directly to check subpixel fitting.
 
 Results file consolidation is performed by `test_coordcleanup_230417.m` and `${TrueSpot_Repo}/core/RNACoords.m`, however unlike the other three tools, an extra step is required to make callsets comparable to truthsets or other callsets. DeepBlink operates in 2D, slice by slice. So while the output table includes z coordinates, there are a lot of redundant calls between slices resulting in an inflation in apparent false positives. The by-slice callsets were perserved in the composite results files, but 2D to 3D merging was performed (see `RNACoords.mergeSlicedSetTo3D`) to produce a 3D compatible callset.
 
@@ -131,10 +133,27 @@ Results file consolidation is performed by `test_coordcleanup_230417.m` and `${T
 This section describes the generation and storage of truth sets, both for sim images and for experimental images.
 
 ### Sim-FISH Truthset Storage
+The ground truth sets from Sim-FISH consist of lists of spot coordinates in x, y, and z denoting the center of the spot gaussian along with their sigma in xy, sigma in z, and true intensity. The ground truth tables for each image can be found in each image's results MAT file under the `analysis.simkey` variable, in the MAT file containing the simulated image under the `key` variable, and in .csv form (Sim-FISH raw output, 0-based coordinates) in each sim set's `keybackup` directory where the simulated images are stored.
+
+Additionally, simulated images from the mass generated batches have their simulation parameters stored in their results files (as `analysis.simparam`) and MAT containers (as `simparam`) as well.
 
 ### RS-FISH Benchmarking Set Truthset Storage
+The .loc files provided with the RS-FISH benchmarking set were converted to .csv files for easier reading by MATLAB (since MATLAB in all its "helpfulness" modifies its behavior based on the file extension and refused to load the .loc files directly despite them being text tables). 
+
+The `loadSimTruthsetRS` function in `test_coordcleanup_230417` handled import of these csv files into MATLAB. Briefly, the coordinates were first converted to 1-based from 0-based coordinates by adding 1 to every value in the table. The first and second columns were swapped as our results standard listed coordinates in order of x, y, z and these coordinates appeared to be in order of y, x, z. 
+
+Truthsets for RS-FISH simulated images can be found in the results mat files under `analysis.simkey`. Rather than an array of structs with named fields as with our Sim-FISH images, these truthsets are stored as n-by-4 or n-by-3 matrices with unnamed columns. The columns are x, y, z, intensity (if intensity is present).
+
+Of note, all Sim-FISH ground truths use only integer coordinates, whereas RS-FISH set ground truths have subpixel precise coordinates.
 
 ### Experimental Image Reference Set Generation
+The code containing all of the brains for the agnostic manual reference set generation tool lies in `core/RNA_Threshold_SpotSelector.m`. The wrapper scripts used to cleanly call this tool are `test_launch_spotanno_221116` (used by B.H.) and `spotpickscript_v2` (used by other manual curators). These scripts are meant to be used interactively, the user plugging in their root directory and name of the image to curate and it pulling up the location of the spot call data and image file from a master table. 
+
+The `core/RNA_Threshold_SpotSelector.m` code renders the target image and its LoG filtered version (switching between slice-by-slice or maximum projection can be done with user input) into a MATLAB figure. Mouse and key listeners are used to allow the user to click on points on the image that they want to mark as spots. User can request computer snap their selections to an automated callset for feedback in tight clusters (any callset can be loaded in, not just TrueSpot's), but manual curators were instructed to override any computer suggestions that they did not agree with. Importantly, the same snapping algorithm was applied to these reference sets against all callsets upon performance analysis, so choice of computer set during manual spot selection should have no effect on performance metrics. 
+
+Manual reference sets from each curator are provided in the experimental reference set repository linked in the README. They can also be found in the image result MAT files as `analysis.exprefset` (a n-by-3 matrix of 1-based x,y,z coordinates). `analysis.truthset_region` specifies the region of the image included in the truthset, as in some cases the image was too large and had too many signal spots to curate in a reasonable timeframe and a piece of the image was used (and evaluated) instead.
+
+Because experimental images had multiple manual curators, these sets are stored in the result files as `analysis.truthset_{CURATOR}`. For the current version of the manuscript, the BH sets were used across all images, however we intend to integrate the results from more manual curators in future results sets. Recalculated performance metrics for different reference sets can also be found in results structures, both as columns in the `callset` tables as alternate `performance` tables under `analysis.results_{TOOLABBR}.truthset_{CURATOR}`.
 
 ## Data Organization
 This section describes how data were dumped from binary `mat` files storing detailed results to analysis-specific tables.
