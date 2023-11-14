@@ -1,14 +1,14 @@
 %
 %% BASE DIR
 
-ImgProcBaseDir = 'C:\Users\hospelb\labdata\imgproc';
-%ImgProcBaseDir = 'D:\usr\bghos\labdat\imgproc';
+%ImgProcBaseDir = 'C:\Users\hospelb\labdata\imgproc';
+ImgProcBaseDir = 'D:\usr\bghos\labdat\imgproc';
 
 % ========================== Constants ==========================
 
 addpath('./core');
 
-group_name = 'simytc';
+group_name = 'simneg';
 UseDir = [ImgProcBaseDir filesep 'img' filesep group_name];
 
 VOX_XY = 65;
