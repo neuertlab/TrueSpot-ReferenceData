@@ -18,7 +18,7 @@ scriptCtx = genScriptContextStruct(BaseDir);
 scriptCtx.ImgProcDir = ImgProcDir;
 scriptCtx.ImgDir = ImgDir;
 
-scriptCtx.DateSuffix = '230721';
+scriptCtx.DateSuffix = '231013';
 scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
 
 % ========================== Parameters ==========================
@@ -52,6 +52,7 @@ for t = 1:ImgTableCount
         %Get res file path
         set_group_dir = getSetOutputDirName(myname);
         ResFilePath = [scriptCtx.ResultsDir filesep set_group_dir filesep myname '_summary.mat'];
+        scriptCtx.ResultsPath = ResFilePath;
 
         if isfile(ResFilePath)
             load(ResFilePath, 'analysis');
@@ -74,7 +75,9 @@ function ctx = initialize(ctx)
     %ctx = openThOutput(ctx);
 
     %ctx = open_sctcOutput(ctx);
-    ctx = openExpDumpOutput(ctx);
+    %ctx = openExpDumpOutput(ctx);
+
+    ctx = open_sctcSimCountOutput(ctx);
 end
 
 function ctx = finalize(ctx)
@@ -90,14 +93,20 @@ function doTheThing(ctx, analysis)
     %TODO fill in action here.
     %Dump_ThreshTable(ctx.OutputHandle, analysis);
 
-    %do_sctcIndiv(ctx, analysis);
-    Dump_expResultStats(ctx.OutputHandle, analysis);
+    do_sctcIndiv(ctx, analysis);
+    %Dump_expResultStats(ctx.OutputHandle, analysis);
+
+    %Look for truthset
+%     if isfield(analysis, 'simkey') | isfield(analysis, 'exprefset')
+%         analysis = Update_TrimAllSim_230912(analysis, 7);
+%         save(ctx.ResultsPath, 'analysis');
+%     end
 end
 
 function bool_res = shouldSkip(imgName)
     %TODO fill in action here.
-    bool_res = false;
-    %bool_res = skip_sctc(imgName);
+    %bool_res = false;
+    bool_res = skip_sctc(imgName);
 end
 
 function ctx = genScriptContextStruct(basedir)
@@ -105,6 +114,7 @@ function ctx = genScriptContextStruct(basedir)
     ctx.ImgProcDir = basedir;
     ctx.ImgDir = basedir;
     ctx.ResultsDir = [basedir filesep 'data' filesep 'results'];
+    ctx.ResultsPath = [basedir filesep 'data' filesep 'results'];
     ctx.OutputDir = basedir;
     ctx.ImageInfoTable = table.empty();
     ctx.TableRow = 0;
@@ -161,6 +171,21 @@ function ctx = openThOutput(ctx)
     %Header
     outfields = {'IMGNAME' 'GROUP_A' 'GROUP_B' 'THVAL_HB' 'SPOTS_HB' 'FSCORE_HB'...
         'THVAL_BF' 'SPOTS_BF' 'FSCORE_BF'};
+    field_count = size(outfields, 2);
+    for i = 1:field_count
+        if i > 1; fprintf(ctx.OutputHandle, '\t'); end
+        fprintf(ctx.OutputHandle, outfields{i});
+    end
+    fprintf(ctx.OutputHandle, '\n');
+end
+
+function ctx = open_sctcSimCountOutput(ctx)
+    outpath = [ctx.OutputDir filesep 'sctcsim_counts_' ctx.DateSuffix '.tsv'];
+    ctx.OutputHandle = fopen(outpath, 'w');
+
+    outfields = {'IMAGENAME' 'ACTUAL_SPOTS' 'ACTUAL_SPOTS_TRIMMED'...
+        'HBTr_THRESH', 'HBTr_COUNT_VAR', 'HBTr_COUNT_FIXED'...
+        'BFTr_THRESH', 'BFTr_COUNT_VAR', 'BFTr_COUNT_FIXED'};
     field_count = size(outfields, 2);
     for i = 1:field_count
         if i > 1; fprintf(ctx.OutputHandle, '\t'); end
@@ -250,12 +275,13 @@ function do_sctcIndiv(ctx, analysis)
         183 189
         126 264];
 
-    Dump_sctcStats(ctx.MultiOutputHandle, analysis, fixed_th);
+    %Dump_sctcStats(ctx.MultiOutputHandle, analysis, fixed_th);
+    Dump_sctcSimCounts(ctx.OutputHandle, analysis, fixed_th);
 end
 
 function bool_res = skip_sctc(imgname)
     bool_res = true;
-    if startsWith(imgname, 'sctc_'); bool_res = false; end
+    %if startsWith(imgname, 'sctc_'); bool_res = false; end
     if startsWith(imgname, 'simvarmass_')
         if contains(imgname, 'CY5L')
             bool_res = false;

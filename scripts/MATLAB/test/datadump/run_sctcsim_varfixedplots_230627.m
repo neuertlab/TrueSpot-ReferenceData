@@ -11,9 +11,6 @@ ImgDir = 'D:\usr\bghos\labdat\imgproc';
 
 addpath('./core');
 addpath('./test');
-
-%TODO This doesn't account for trimming...
-
 % ========================== Constants ==========================
 
 TMRL_FIXED_TH_HB = 137;
@@ -41,9 +38,11 @@ row_count = size(image_table,1);
 actual_counts = NaN(250, 2);
 actual_counts_hbt = NaN(250, 2);
 hb_counts_var = NaN(250, 2);
-bf_counts_var = NaN(250, 2);
+hbt_counts_var = NaN(250, 2);
+bft_counts_var = NaN(250, 2);
 hb_counts_fix = NaN(250, 2);
-bf_counts_fix = NaN(250, 2);
+hbt_counts_fix = NaN(250, 2);
+bft_counts_fix = NaN(250, 2);
 
 i = 1;
 j = 1;
@@ -78,6 +77,14 @@ for r = 1:row_count
        
         if isfield(analysis.results_hb, 'callset')
             if th_var > 0
+                findres = find((analysis.results_hb.callset{:,'dropout_thresh'} >= th_var)...
+                    & ~analysis.results_hb.callset{:,'is_trimmed_out'});
+                if ~isempty(findres)
+                    hbt_counts_var(pos, ch) = size(findres, 1);
+                else
+                    hbt_counts_var(pos, ch) = 0;
+                end
+
                 findres = find(analysis.results_hb.callset{:,'dropout_thresh'} >= th_var);
                 if ~isempty(findres)
                     hb_counts_var(pos, ch) = size(findres, 1);
@@ -85,6 +92,14 @@ for r = 1:row_count
                     hb_counts_var(pos, ch) = 0;
                 end
                 clear findres
+            end
+
+            findres = find((analysis.results_hb.callset{:,'dropout_thresh'} >= th_fixed_hb)...
+                & ~analysis.results_hb.callset{:,'is_trimmed_out'});
+            if ~isempty(findres)
+                hbt_counts_fix(pos, ch) = size(findres, 1);
+            else
+                hbt_counts_fix(pos, ch) = 0;
             end
 
             findres = find(analysis.results_hb.callset{:,'dropout_thresh'} >= th_fixed_hb);
@@ -96,7 +111,8 @@ for r = 1:row_count
             clear findres
 
             %Trim...
-            findres = find(analysis.results_hb.callset{:,'is_true'} & ~analysis.results_hb.callset{:,'is_trimmed_out'});
+            findres = find((analysis.results_hb.callset{:,'is_true'})...
+                & ~analysis.results_hb.callset{:,'is_trimmed_out'});
             if ~isempty(findres)
                 actual_counts_hbt(pos, ch) = size(findres, 1);
             else
@@ -113,20 +129,22 @@ for r = 1:row_count
        
         if isfield(analysis.results_bf, 'callset')
             if th_var > 0
-                findres = find(analysis.results_bf.callset{:,'dropout_thresh'} >= th_var);
+                findres = find((analysis.results_bf.callset{:,'dropout_thresh'} >= th_var)...
+                    & ~analysis.results_bf.callset{:,'is_trimmed_out'});
                 if ~isempty(findres)
-                    bf_counts_var(pos, ch) = size(findres, 1);
+                    bft_counts_var(pos, ch) = size(findres, 1);
                 else
-                    bf_counts_var(pos, ch) = 0;
+                    bft_counts_var(pos, ch) = 0;
                 end
                 clear findres
             end
 
-            findres = find(analysis.results_bf.callset{:,'dropout_thresh'} >= th_fixed_bf);
+            findres = find((analysis.results_bf.callset{:,'dropout_thresh'} >= th_fixed_bf)...
+                & ~analysis.results_bf.callset{:,'is_trimmed_out'});
             if ~isempty(findres)
-                bf_counts_fix(pos, ch) = size(findres, 1);
+                bft_counts_fix(pos, ch) = size(findres, 1);
             else
-                bf_counts_fix(pos, ch) = 0;
+                bft_counts_fix(pos, ch) = 0;
             end
             clear findres
         end
@@ -148,7 +166,7 @@ end
 %For channel...
 %   HBVar   HBFixed
 %   HBTVar   HBTFixed
-%   BFVar   BFFixed
+%   BFTVar   BFTFixed
 
 %CY5L
 figure(1);
@@ -157,10 +175,10 @@ hold on;
 
 genScatterCurrentFig(hb_counts_var(:,1), actual_counts(:,1), COLOR_HB, 1);
 genScatterCurrentFig(hb_counts_fix(:,1), actual_counts(:,1), COLOR_HB, 2);
-genScatterCurrentFig(hb_counts_var(:,1), actual_counts_hbt(:,1), COLOR_HBT, 3);
-genScatterCurrentFig(hb_counts_fix(:,1), actual_counts_hbt(:,1), COLOR_HBT, 4);
-genScatterCurrentFig(bf_counts_var(:,1), actual_counts(:,1), COLOR_BF, 5);
-genScatterCurrentFig(bf_counts_fix(:,1), actual_counts(:,1), COLOR_BF, 6);
+genScatterCurrentFig(hbt_counts_var(:,1), actual_counts_hbt(:,1), COLOR_HBT, 3);
+genScatterCurrentFig(hbt_counts_fix(:,1), actual_counts_hbt(:,1), COLOR_HBT, 4);
+genScatterCurrentFig(bft_counts_var(:,1), actual_counts_hbt(:,1), COLOR_BF, 5);
+genScatterCurrentFig(bft_counts_fix(:,1), actual_counts_hbt(:,1), COLOR_BF, 6);
 
 %TMRL
 figure(2);
@@ -169,10 +187,10 @@ hold on;
 
 genScatterCurrentFig(hb_counts_var(:,2), actual_counts(:,2), COLOR_HB, 1);
 genScatterCurrentFig(hb_counts_fix(:,2), actual_counts(:,2), COLOR_HB, 2);
-genScatterCurrentFig(hb_counts_var(:,2), actual_counts_hbt(:,2), COLOR_HBT, 3);
-genScatterCurrentFig(hb_counts_fix(:,2), actual_counts_hbt(:,2), COLOR_HBT, 4);
-genScatterCurrentFig(bf_counts_var(:,2), actual_counts(:,2), COLOR_BF, 5);
-genScatterCurrentFig(bf_counts_fix(:,2), actual_counts(:,2), COLOR_BF, 6);
+genScatterCurrentFig(hbt_counts_var(:,2), actual_counts_hbt(:,2), COLOR_HBT, 3);
+genScatterCurrentFig(hbt_counts_fix(:,2), actual_counts_hbt(:,2), COLOR_HBT, 4);
+genScatterCurrentFig(bft_counts_var(:,2), actual_counts_hbt(:,2), COLOR_BF, 5);
+genScatterCurrentFig(bft_counts_fix(:,2), actual_counts_hbt(:,2), COLOR_BF, 6);
 
 % ========================== Helper Functions ==========================
 

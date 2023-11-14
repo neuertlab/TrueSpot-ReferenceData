@@ -65,6 +65,7 @@ classdef SpotPlots
             x_max = max(x, [], 'all', 'omitnan');
             x_min = min(x, [], 'all', 'omitnan');
 
+            if y_max <= 0.0; y_max = 1.0; end
             xlim([x_min x_max]);
             ylim([0.0 y_max]);
             set(gca,'XTickLabel',[]);
@@ -75,6 +76,11 @@ classdef SpotPlots
         function fig_handle = renderLogSpotCountPlot(x, y, base_color, threshold, thresh_res, figno, existing_fig)
             y_max = max(y,[],'all','omitnan') + 0.5;
             fig_handle = SpotPlots.renderThreshVersusPlot(x, y, 'log10(# Spots Detected)', y_max, base_color, threshold, thresh_res, figno, existing_fig);
+        end
+
+        function fig_handle = renderSpotCountPlot(x, y, base_color, threshold, thresh_res, figno, existing_fig)
+            y_max = max(y,[],'all','omitnan');
+            fig_handle = SpotPlots.renderThreshVersusPlot(x, y, '# Spots Detected', y_max, base_color, threshold, thresh_res, figno, existing_fig);
         end
 
         function fig_handle = renderFScorePlot(x, y, base_color, threshold, thresh_res, figno, existing_fig)

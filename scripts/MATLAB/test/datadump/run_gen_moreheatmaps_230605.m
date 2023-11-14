@@ -16,15 +16,15 @@ addpath('./test');
 
 SimResCSVPath = [BaseDir filesep 'sim_results.csv'];
 
-DateDir = '20230605';
-DateSuffix = '230605';
+DateDir = '20230913';
+DateSuffix = '230913';
 OutDir = [ImgProcDir filesep 'figures' filesep DateDir];
 
 % ========================== Parameters ==========================
 
 % ========================== Read Table ==========================
 
-fmt_string = ['%s' repmat('%f', 1, 5) '%s' repmat('%f', 1, 22) '%s%s'];
+fmt_string = ['%s' repmat('%f', 1, 6) '%s' repmat('%f', 1, 47)];
 simres_table = readtable(SimResCSVPath,'Delimiter',',','ReadVariableNames',true,'Format',...
     fmt_string);
 
@@ -33,15 +33,16 @@ simres_table = readtable(SimResCSVPath,'Delimiter',',','ReadVariableNames',true,
 entry_count = size(simres_table,1);
 mtx = NaN(entry_count, 5);
 
-xlbl = {'HBTrimmed' 'HB' 'BF' 'RS' 'DB'};
+xlbl = {'HBTr' 'BFTr' 'RSTr' 'DBTr' 'DBAltTr'};
 
 %Recall Max
 
 mtx(:,1) = simres_table{:, 'HBTr_MAXREC'};
-mtx(:,2) = simres_table{:, 'HB_MAXREC'};
-mtx(:,3) = simres_table{:, 'BF_MAXREC'};
-mtx(:,4) = simres_table{:, 'RS_MAXREC'};
-mtx(:,5) = simres_table{:, 'DB_MAXREC'};
+%mtx(:,2) = simres_table{:, 'HB_MAXREC'};
+mtx(:,2) = simres_table{:, 'BFTr_MAXREC'};
+mtx(:,3) = simres_table{:, 'RSTr_MAXREC'};
+mtx(:,4) = simres_table{:, 'DBTr_MAXREC'};
+mtx(:,5) = simres_table{:, 'DBALTTr_MAXREC'};
 
 fig_handle = doHeatmap(1, mtx, xlbl);
 xlabel('Tool');
@@ -49,21 +50,23 @@ xlabel('Tool');
 %PRAUC
 
 mtx(:,1) = simres_table{:, 'PRAUC_HBTr'};
-mtx(:,2) = simres_table{:, 'PRAUC_HB'};
-mtx(:,3) = simres_table{:, 'PRAUC_BF'};
-mtx(:,4) = simres_table{:, 'PRAUC_RS'};
-mtx(:,5) = simres_table{:, 'PRAUC_DB'};
+%mtx(:,2) = simres_table{:, 'PRAUC_HB'};
+mtx(:,2) = simres_table{:, 'PRAUC_BFTr'};
+mtx(:,3) = simres_table{:, 'PRAUC_RSTr'};
+mtx(:,4) = simres_table{:, 'PRAUC_DBTr'};
+mtx(:,5) = simres_table{:, 'PRAUC_DBALTTr'};
 
 fig_handle = doHeatmap(2, mtx, xlbl);
 xlabel('Tool');
 
 %FScores
-mtx = NaN(entry_count, 3);
-xlbl = {'HBTrimmed' 'HB' 'BF'};
+mtx = NaN(entry_count, 4);
+xlbl = {'HBTr' 'HB' 'BFTr' 'BF'};
 
 mtx(:,1) = simres_table{:, 'HBTr_FSCORE'};
 mtx(:,2) = simres_table{:, 'HB_FSCORE'};
-mtx(:,3) = simres_table{:, 'BF_FSCORE'};
+mtx(:,3) = simres_table{:, 'BFTr_FSCORE'};
+mtx(:,4) = simres_table{:, 'BF_FSCORE'};
 
 fig_handle = doHeatmap(3, mtx, xlbl);
 xlabel('Tool');

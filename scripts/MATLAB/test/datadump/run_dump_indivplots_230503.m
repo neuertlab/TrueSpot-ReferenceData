@@ -14,11 +14,19 @@ addpath('./test');
 
 % ========================== Constants ==========================
 
-ROW_INDEX = 655;
+ROW_INDEX = 263;
 
+DUMP_SPOTCOUNTS_NOLOG = true;
 DUMP_SPOTCOUNTS = true;
 DUMP_FSCORES = true;
 DUMP_PRC = true;
+
+DB_TYPE_NORMAL = 1;
+DB_TYPE_ALT = 2;
+DB_TYPE_2D = 3;
+DB_TYPE_2DALT = 4;
+
+DB_TYPE = DB_TYPE_NORMAL;
 
 USE_TRIMMED = true;
 
@@ -36,12 +44,14 @@ ResultsDir = [BaseDir filesep 'data' filesep 'results'];
 % ========================== Read Table ==========================
 
 %InputTablePath = [BaseDir filesep 'test_images_simytc.csv'];
-InputTablePath = [BaseDir filesep 'test_images_simvarmass.csv'];
-%InputTablePath = [BaseDir filesep 'test_images.csv'];
+%InputTablePath = [BaseDir filesep 'test_images_simvarmass.csv'];
+InputTablePath = [BaseDir filesep 'test_images.csv'];
 
 image_table = testutil_opentable(InputTablePath);
 
 % ========================== Go through ==========================
+
+figno = 1;
 
 %Find summary file.
 myname = getTableValue(image_table, ROW_INDEX, 'IMGNAME');
@@ -53,7 +63,7 @@ else
     return;
 end
 
-if DUMP_SPOTCOUNTS
+if DUMP_SPOTCOUNTS | DUMP_SPOTCOUNTS_NOLOG
     if isfield(analysis, 'results_hb')
         if isfield(analysis.results_hb, 'performance')
 
@@ -69,11 +79,22 @@ if DUMP_SPOTCOUNTS
                 x = analysis.results_hb.performance{:,'thresholdValue'};
                 y = double(analysis.results_hb.performance{:,'spotCount'});
             end
-            y = log10(y);
 
-            SpotPlots.renderLogSpotCountPlot(x, y,...
-                COLOR_HB, analysis.results_hb.threshold,...
-                analysis.results_hb.threshold_details, 1, []);
+            if DUMP_SPOTCOUNTS_NOLOG
+                SpotPlots.renderSpotCountPlot(x, y,...
+                    COLOR_HB, analysis.results_hb.threshold,...
+                    analysis.results_hb.threshold_details, figno, []);
+                figno = figno + 1;
+            end
+
+            if DUMP_SPOTCOUNTS
+                y = log10(y);
+
+                SpotPlots.renderLogSpotCountPlot(x, y,...
+                    COLOR_HB, analysis.results_hb.threshold,...
+                    analysis.results_hb.threshold_details, figno, []);
+                figno = figno + 1;
+            end
         end
     end
 
@@ -91,11 +112,22 @@ if DUMP_SPOTCOUNTS
                 x = analysis.results_bf.performance{:,'thresholdValue'};
                 y = double(analysis.results_bf.performance{:,'spotCount'});
             end
-            y = log10(y);
 
-            SpotPlots.renderLogSpotCountPlot(x, y,...
-                COLOR_BF, analysis.results_bf.threshold,...
-                [], 2, []);
+            if DUMP_SPOTCOUNTS_NOLOG
+                SpotPlots.renderSpotCountPlot(x, y,...
+                    COLOR_BF, analysis.results_bf.threshold,...
+                    [], figno, []);
+                figno = figno + 1;
+            end
+
+            if DUMP_SPOTCOUNTS
+                y = log10(y);
+
+                SpotPlots.renderLogSpotCountPlot(x, y,...
+                    COLOR_BF, analysis.results_bf.threshold,...
+                    [], figno, []);
+                figno = figno + 1;
+            end
         end
     end
 
@@ -103,23 +135,110 @@ if DUMP_SPOTCOUNTS
         if isfield(analysis.results_rs, 'performance')
             x = analysis.results_rs.performance{:,'thresholdValue'};
             y = double(analysis.results_rs.performance{:,'spotCount'});
-            y = log10(y);
 
-            SpotPlots.renderLogSpotCountPlot(x, y,...
-                COLOR_RS, 0,...
-                [], 3, []);
+            if DUMP_SPOTCOUNTS_NOLOG
+                SpotPlots.renderSpotCountPlot(x, y,...
+                    COLOR_RS, 0,...
+                    [], figno, []);
+                figno = figno + 1;
+            end
+
+            if DUMP_SPOTCOUNTS
+                y = log10(y);
+
+                SpotPlots.renderLogSpotCountPlot(x, y,...
+                    COLOR_RS, 0,...
+                    [], figno, []);
+                figno = figno + 1;
+            end
         end
     end
 
-    if isfield(analysis, 'results_db')
-        if isfield(analysis.results_db, 'performance')
+    if isfield(analysis, 'results_db') & ((DB_TYPE == DB_TYPE_NORMAL) | (DB_TYPE == DB_TYPE_2D))
+        if isfield(analysis.results_db, 'performance') & (DB_TYPE == DB_TYPE_NORMAL)
             x = analysis.results_db.performance{:,'thresholdValue'};
             y = double(analysis.results_db.performance{:,'spotCount'});
-            y = log10(y);
 
-            SpotPlots.renderLogSpotCountPlot(x, y,...
-                COLOR_DB, 0,...
-                [], 4, []);
+            if DUMP_SPOTCOUNTS_NOLOG
+                SpotPlots.renderSpotCountPlot(x, y,...
+                    COLOR_DB, 0,...
+                    [], figno, []);
+                figno = figno + 1;
+            end
+
+            if DUMP_SPOTCOUNTS
+                y = log10(y);
+
+                SpotPlots.renderLogSpotCountPlot(x, y,...
+                    COLOR_DB, 0,...
+                    [], figno, []);
+                figno = figno + 1;
+            end
+        end
+
+        if isfield(analysis.results_db, 'performance_2d') & (DB_TYPE == DB_TYPE_2D)
+            x = analysis.results_db.performance_2d{:,'thresholdValue'};
+            y = double(analysis.results_db.performance_2d{:,'spotCount'});
+
+            if DUMP_SPOTCOUNTS_NOLOG
+                SpotPlots.renderSpotCountPlot(x, y,...
+                    COLOR_DB, 0,...
+                    [], figno, []);
+                figno = figno + 1;
+            end
+
+            if DUMP_SPOTCOUNTS
+                y = log10(y);
+
+                SpotPlots.renderLogSpotCountPlot(x, y,...
+                    COLOR_DB, 0,...
+                    [], figno, []);
+                figno = figno + 1;
+            end
+        end
+    end
+
+    if isfield(analysis, 'results_db_simmdl') & ((DB_TYPE == DB_TYPE_ALT) | (DB_TYPE == DB_TYPE_2DALT))
+        if isfield(analysis.results_db_simmdl, 'performance') & (DB_TYPE == DB_TYPE_ALT)
+            x = analysis.results_db_simmdl.performance{:,'thresholdValue'};
+            y = double(analysis.results_db_simmdl.performance{:,'spotCount'});
+
+            if DUMP_SPOTCOUNTS_NOLOG
+                SpotPlots.renderSpotCountPlot(x, y,...
+                    COLOR_DB, 0,...
+                    [], figno, []);
+                figno = figno + 1;
+            end
+
+            if DUMP_SPOTCOUNTS
+                y = log10(y);
+
+                SpotPlots.renderLogSpotCountPlot(x, y,...
+                    COLOR_DB, 0,...
+                    [], figno, []);
+                figno = figno + 1;
+            end
+        end
+
+        if isfield(analysis.results_db_simmdl, 'performance_2d') & (DB_TYPE == DB_TYPE_2DALT)
+            x = analysis.results_db_simmdl.performance_2d{:,'thresholdValue'};
+            y = double(analysis.results_db_simmdl.performance_2d{:,'spotCount'});
+
+            if DUMP_SPOTCOUNTS_NOLOG
+                SpotPlots.renderSpotCountPlot(x, y,...
+                    COLOR_DB, 0,...
+                    [], figno, []);
+                figno = figno + 1;
+            end
+
+            if DUMP_SPOTCOUNTS
+                y = log10(y);
+
+                SpotPlots.renderLogSpotCountPlot(x, y,...
+                    COLOR_DB, 0,...
+                    [], figno, []);
+                figno = figno + 1;
+            end
         end
     end
 end
@@ -142,7 +261,8 @@ if DUMP_FSCORES
 
             SpotPlots.renderFScorePlot(x, y,...
                 COLOR_HB, analysis.results_hb.threshold,...
-                analysis.results_hb.threshold_details, 5, []);
+                analysis.results_hb.threshold_details, figno, []);
+            figno = figno + 1;
         end
     end
 
@@ -163,7 +283,8 @@ if DUMP_FSCORES
 
             SpotPlots.renderFScorePlot(x, y,...
                 COLOR_BF, analysis.results_bf.threshold,...
-                [], 6, []);
+                [], figno, []);
+            figno = figno + 1;
         end
     end
 
@@ -174,20 +295,55 @@ if DUMP_FSCORES
 
             SpotPlots.renderFScorePlot(x, y,...
                 COLOR_RS, 0,...
-                [], 7, []);
+                [], figno, []);
+            figno = figno + 1;
         end
     end
 
-    if isfield(analysis, 'results_db')
-        if isfield(analysis.results_db, 'performance')
+    if isfield(analysis, 'results_db') & ((DB_TYPE == DB_TYPE_NORMAL) | (DB_TYPE == DB_TYPE_2D))
+        if isfield(analysis.results_db, 'performance') & (DB_TYPE == DB_TYPE_NORMAL)
             x = analysis.results_db.performance{:,'thresholdValue'};
             y = double(analysis.results_db.performance{:,'fScore'});
 
             SpotPlots.renderFScorePlot(x, y,...
                 COLOR_DB, 0,...
-                [], 8, []);
+                [], figno, []);
+            figno = figno + 1;
+        end
+
+        if isfield(analysis.results_db, 'performance_2d') & (DB_TYPE == DB_TYPE_2D)
+            x = analysis.results_db.performance_2d{:,'thresholdValue'};
+            y = double(analysis.results_db.performance_2d{:,'fScore'});
+
+            SpotPlots.renderFScorePlot(x, y,...
+                COLOR_DB, 0,...
+                [], figno, []);
+            figno = figno + 1;
         end
     end
+
+    if isfield(analysis, 'results_db_simmdl') & ((DB_TYPE == DB_TYPE_ALT) | (DB_TYPE == DB_TYPE_2DALT))
+        if isfield(analysis.results_db_simmdl, 'performance') & (DB_TYPE == DB_TYPE_ALT)
+            x = analysis.results_db_simmdl.performance{:,'thresholdValue'};
+            y = double(analysis.results_db_simmdl.performance{:,'fScore'});
+
+            SpotPlots.renderFScorePlot(x, y,...
+                COLOR_DB, 0,...
+                [], figno, []);
+            figno = figno + 1;
+        end
+
+        if isfield(analysis.results_db_simmdl, 'performance_2d') & (DB_TYPE == DB_TYPE_2DALT)
+            x = analysis.results_db_simmdl.performance_2d{:,'thresholdValue'};
+            y = double(analysis.results_db_simmdl.performance_2d{:,'fScore'});
+
+            SpotPlots.renderFScorePlot(x, y,...
+                COLOR_DB, 0,...
+                [], figno, []);
+            figno = figno + 1;
+        end
+    end
+
 end
 
 if DUMP_PRC
@@ -206,7 +362,8 @@ if DUMP_PRC
                 y = double(analysis.results_hb.performance{:,'precision'});
             end
 
-            SpotPlots.renderPRPlot(x, y, COLOR_HB, 9, []);
+            SpotPlots.renderPRPlot(x, y, COLOR_HB, figno, []);
+            figno = figno + 1;
         end
     end
 
@@ -225,7 +382,8 @@ if DUMP_PRC
                 y = double(analysis.results_bf.performance{:,'precision'});
             end
 
-            SpotPlots.renderPRPlot(x, y, COLOR_BF, 10, []);
+            SpotPlots.renderPRPlot(x, y, COLOR_BF, figno, []);
+            figno = figno + 1;
         end
     end
 
@@ -234,16 +392,44 @@ if DUMP_PRC
             x = analysis.results_rs.performance{:,'sensitivity'};
             y = double(analysis.results_rs.performance{:,'precision'});
 
-            SpotPlots.renderPRPlot(x, y, COLOR_RS, 11, []);
+            SpotPlots.renderPRPlot(x, y, COLOR_RS, figno, []);
+            figno = figno + 1;
         end
     end
 
-    if isfield(analysis, 'results_db')
-        if isfield(analysis.results_db, 'performance')
+    if isfield(analysis, 'results_db') & ((DB_TYPE == DB_TYPE_NORMAL) | (DB_TYPE == DB_TYPE_2D))
+        if isfield(analysis.results_db, 'performance') & (DB_TYPE == DB_TYPE_NORMAL)
             x = analysis.results_db.performance{:,'sensitivity'};
             y = double(analysis.results_db.performance{:,'precision'});
 
-            SpotPlots.renderPRPlot(x, y, COLOR_DB, 12, []);
+            SpotPlots.renderPRPlot(x, y, COLOR_DB, figno, []);
+            figno = figno + 1;
+        end
+
+        if isfield(analysis.results_db, 'performance_2d') & (DB_TYPE == DB_TYPE_2D)
+            x = analysis.results_db.performance_2d{:,'sensitivity'};
+            y = double(analysis.results_db.performance_2d{:,'precision'});
+
+            SpotPlots.renderPRPlot(x, y, COLOR_DB, figno, []);
+            figno = figno + 1;
+        end
+    end
+
+    if isfield(analysis, 'results_db_simmdl') & ((DB_TYPE == DB_TYPE_ALT) | (DB_TYPE == DB_TYPE_2DALT))
+        if isfield(analysis.results_db_simmdl, 'performance') & (DB_TYPE == DB_TYPE_ALT)
+            x = analysis.results_db_simmdl.performance{:,'sensitivity'};
+            y = double(analysis.results_db_simmdl.performance{:,'precision'});
+
+            SpotPlots.renderPRPlot(x, y, COLOR_DB, figno, []);
+            figno = figno + 1;
+        end
+
+        if isfield(analysis.results_db_simmdl, 'performance_2d') & (DB_TYPE == DB_TYPE_2DALT)
+            x = analysis.results_db_simmdl.performance_2d{:,'sensitivity'};
+            y = double(analysis.results_db_simmdl.performance_2d{:,'precision'});
+
+            SpotPlots.renderPRPlot(x, y, COLOR_DB, figno, []);
+            figno = figno + 1;
         end
     end
 end
@@ -266,7 +452,11 @@ function dirname = getSetOutputDirName(imgname)
             dirname = groupname;
         end
     else
-        dirname = groupname;
+        if startsWith(groupname, 'ROI')
+            dirname = 'munsky_lab';
+        else
+            dirname = groupname;
+        end
     end
 end
 

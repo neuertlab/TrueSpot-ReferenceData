@@ -16,8 +16,8 @@ addpath('./test');
 
 SimResCSVPath = [BaseDir filesep 'sim_results.csv'];
 
-DateDir = '20230530';
-DateSuffix = '230530';
+DateDir = '20230913';
+DateSuffix = '230913';
 OutDir = [ImgProcDir filesep 'figures' filesep DateDir];
 
 % ========================== Parameters ==========================
@@ -30,13 +30,13 @@ DO_DB = true;
 HB_TRIMMED = true;
 MAX_ZEROPROP = 0.70;
 
-DO_PRAUC = true;
-DO_FSCORE = true;
+DO_PRAUC = false;
+DO_FSCORE = false;
 DO_SPOTSVS = true;
 
 % ========================== Read Table ==========================
 
-fmt_string = ['%s' repmat('%f', 1, 5) '%s' repmat('%f', 1, 17) '%s%s'];
+fmt_string = ['%s' repmat('%f', 1, 6) '%s' repmat('%f', 1, 47) '%s%s'];
 simres_table = readtable(SimResCSVPath,'Delimiter',',','ReadVariableNames',true,'Format',...
     fmt_string);
 
@@ -57,7 +57,7 @@ bkg_lvl = simres_table{:, 'BKG_LVL'};
 amp_lvl = simres_table{:, 'AMP_LVL'};
 %snr = amp_lvl ./ bkg_lvl;
 
-actual_spots = simres_table{:, 'SPOTS_ACTUAL'};
+actual_spots = simres_table{:, 'SPOTS_ACTUAL_XYTRIM'};
 fzprop = simres_table{:, 'FILT_PROP_ZERO'};
 bkg_var = simres_table{:, 'BKG_VAR'};
 amp_var = simres_table{:, 'AMP_VAR'};
@@ -108,9 +108,9 @@ if DO_HB
 end
 
 if DO_BF
-    pr_auc = simres_table{:, 'PRAUC_BF'};
-    f_scores = simres_table{:, 'BF_FSCORE'};
-    spot_det = simres_table{:, 'BF_SPOTS'};
+    pr_auc = simres_table{:, 'PRAUC_BFTr'};
+    f_scores = simres_table{:, 'BFTr_FSCORE'};
+    spot_det = simres_table{:, 'BFTr_SPOTS'};
 
     if DO_PRAUC
         %MakeRedBlueScatterplot(snr, pr_auc, amp_var, bkg_var, 'SNR', 'PR-AUC', 4);
