@@ -239,9 +239,13 @@ th_comp_stats <- data.frame(EXP = integer(),
 	ON_PROP_TPAIR = double(),
 	ON_PROP_TPAIR_P = double(),
 	ON_PROP_TPAIR_EST = double(),
+	ON_PROP_TPAIR_CI95_LO = double(),
+	ON_PROP_TPAIR_CI95_HI = double(),
 	AVG_PER_TPAIR = double(),
 	AVG_PER_TPAIR_P = double(),
-	AVG_PER_TPAIR_EST = double()
+	AVG_PER_TPAIR_EST = double(),
+	AVG_PER_TPAIR_CI95_LO = double(),
+	AVG_PER_TPAIR_CI95_HI = double()
 )
 
 for (ee in 1:2){
@@ -272,9 +276,13 @@ for (ee in 1:2){
 					ON_PROP_TPAIR = rep(NaN, combo_count),
 					ON_PROP_TPAIR_P = rep(NaN, combo_count),
 					ON_PROP_TPAIR_EST = rep(NaN, combo_count),
+					ON_PROP_TPAIR_CI95_LO = rep(NaN, combo_count),
+					ON_PROP_TPAIR_CI95_HI = rep(NaN, combo_count),
 					AVG_PER_TPAIR = rep(NaN, combo_count),
 					AVG_PER_TPAIR_P = rep(NaN, combo_count),
-					AVG_PER_TPAIR_EST = rep(NaN, combo_count))
+					AVG_PER_TPAIR_EST = rep(NaN, combo_count),
+					AVG_PER_TPAIR_CI95_LO = rep(NaN, combo_count),
+					AVG_PER_TPAIR_CI95_HI = rep(NaN, combo_count))
 					
 				for(j in 1:combo_count){
 					set_a <- filter(sctcRnaTable, TOOL == tool_name, EXP == ee, REP == rr, CH == cc, TH_TYPE == th_cycle_a[j])
@@ -296,11 +304,15 @@ for (ee in 1:2){
 					th_comp_group$ON_PROP_TPAIR[j] <- t_res$statistic
 					th_comp_group$ON_PROP_TPAIR_P[j] <- t_res$p.value
 					th_comp_group$ON_PROP_TPAIR_EST[j] <- t_res$estimate
+					th_comp_group$ON_PROP_TPAIR_CI95_LO[j] <- t_res$conf.int[1]
+					th_comp_group$ON_PROP_TPAIR_CI95_HI[j] <- t_res$conf.int[2]
 					
 					t_res <- t.test(set_a$AVG_PER_ON,set_b$AVG_PER_ON,paired=TRUE)
 					th_comp_group$AVG_PER_TPAIR[j] <- t_res$statistic
 					th_comp_group$AVG_PER_TPAIR_P[j] <- t_res$p.value
 					th_comp_group$AVG_PER_TPAIR_EST[j] <- t_res$estimate
+					th_comp_group$AVG_PER_TPAIR_CI95_LO[j] <- t_res$conf.int[1]
+					th_comp_group$AVG_PER_TPAIR_CI95_HI[j] <- t_res$conf.int[2]
 					
 					rm(wc_res)
 					rm(t_res)
@@ -377,3 +389,12 @@ for (tpi in 1:timePointCount) {
 		totalsTable$STD_PER_ON[tpi] <- 0
 	}
 }
+
+#--- Sim actual vs. detected Stats
+inputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\sctcsim_counts_231013.tsv"
+sctcSimCountTable <- read_tsv(inputTablePath)
+cy5l_countTable <- filter(sctcSimCountTable, startsWith(IMAGENAME, "simvarmass_CY5L_"))
+tmrl_countTable <- filter(sctcSimCountTable, startsWith(IMAGENAME, "simvarmass_TMRL_"))
+
+cor_res_s <- cor.test(tmrl_countTable$ACTUAL_SPOTS_TRIMMED, tmrl_countTable$HBTr_COUNT_FIXED, method = "spearman")
+cor_res_p <- cor.test(tmrl_countTable$ACTUAL_SPOTS_TRIMMED, tmrl_countTable$HBTr_COUNT_FIXED, method = "pearson")

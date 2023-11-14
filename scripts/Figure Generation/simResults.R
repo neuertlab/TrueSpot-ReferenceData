@@ -28,9 +28,9 @@ makePlottableTable3 <- function(table_in){
 		SNR_DIFF = rep(table_in[,"SNR_SUBBKG_STDBKG"], 6),
 		ZVP = rep(table_in[,"FILT_PROP_ZERO"], 6),
 		AmpVar = rep(table_in[,"AMP_VAR"], 6),
-		PRAUC = c(table_in[,"PRAUC_HB"], table_in[,"PRAUC_HBTr"], table_in[,"PRAUC_BF"], table_in[,"PRAUC_RS"], table_in[,"PRAUC_DB"], table_in[,"PRAUC_DBALT"]),
-		MaxRecall = c(table_in[,"HB_MAXREC"], table_in[,"HBTr_MAXREC"], table_in[,"BF_MAXREC"], table_in[,"RS_MAXREC"], table_in[,"DB_MAXREC"], table_in[,"DBALT_MAXREC"]),
-		FScore = c(table_in[,"HB_FSCORE"], table_in[,"HBTr_FSCORE"], table_in[,"BF_FSCORE"], rep(NaN, 3*inputRows)),
+		PRAUC = c(table_in[,"PRAUC_HB"], table_in[,"PRAUC_HBTr"], table_in[,"PRAUC_BFTr"], table_in[,"PRAUC_RSTr"], table_in[,"PRAUC_DBTr"], table_in[,"PRAUC_DBALTTr"]),
+		MaxRecall = c(table_in[,"HB_MAXREC"], table_in[,"HBTr_MAXREC"], table_in[,"BFTr_MAXREC"], table_in[,"RSTr_MAXREC"], table_in[,"DBTr_MAXREC"], table_in[,"DBALTTr_MAXREC"]),
+		FScore = c(table_in[,"HB_FSCORE"], table_in[,"HBTr_FSCORE"], table_in[,"BFTr_FSCORE"], rep(NaN, 3*inputRows)),
 		Tool = as.factor(c(rep("NeuertLabUntrimmed", inputRows), rep("NeuertLab", inputRows), rep("Big-FISH", inputRows), rep("RS-FISH", inputRows), rep("DeepBlink", inputRows), rep("DeepBlinkAlt", inputRows)))
 	)
 	newTable$Tool <- factor(newTable$Tool, levels=c("NeuertLabUntrimmed", "NeuertLab", "Big-FISH", "RS-FISH", "DeepBlink", "DeepBlinkAlt"))
@@ -61,7 +61,7 @@ ggplot(plabPlotTable, aes(x = Tool, y = PRAUC, fill = Tool)) +
 	ggtitle("Preibisch Lab Sim Set - PR-AUC") +
 	scale_fill_manual(values = alpha(c("magenta", "red", "blue", "green", "yellow", "orange"), .3))
 	
-test_set <- filter(plabPlotTable, Tool == "DeepBlinkAlt")
+test_set <- filter(sfPlotTable, Tool == "DeepBlinkAlt")
 quantiles_auc <- quantile(test_set$PRAUC, probs = c(0.25, 0.5, 0.75), na.rm = TRUE)
 mean_auc <- mean(test_set$PRAUC, na.rm = TRUE)
 std_auc <- sd(test_set$PRAUC, na.rm = TRUE)
@@ -82,7 +82,7 @@ ggplot(plabPlotTable, aes(x = Tool, y = FScore, fill = Tool)) +
 	ggtitle("Preibisch Lab Sim Set - F-Scores") +
 	scale_fill_manual(values = alpha(c("magenta", "red", "blue", "green", "yellow", "orange"), .3))
 	
-test_set <- filter(plabPlotTable, Tool == "NeuertLabUntrimmed")
+test_set <- filter(sfPlotTable, Tool == "Big-FISH")
 quantiles_fscore <- quantile(test_set$FScore, probs = c(0.25, 0.5, 0.75), na.rm = TRUE)
 mean_fscore <- mean(test_set$FScore, na.rm = TRUE)
 std_fscore <- sd(test_set$FScore, na.rm = TRUE)
@@ -97,7 +97,7 @@ ggplot(sfPlotTable, aes(x = Tool, y = MaxRecall, fill = Tool)) +
 	scale_fill_manual(values = alpha(c("magenta", "red", "blue", "green", "yellow", "orange"), .3))
 	
 ggplot(plabPlotTable, aes(x = Tool, y = MaxRecall, fill = Tool)) + 
-	geom_violin(scale = "count", draw_quantiles = c(0.25, 0.5, 0.75), trim = FALSE) + 
+	geom_violin(scale = "width", draw_quantiles = c(0.25, 0.5, 0.75), trim = FALSE) + 
 	ylim(0,1) +
 	xlab("") +
 	ylab("Max Recall") +
@@ -105,7 +105,7 @@ ggplot(plabPlotTable, aes(x = Tool, y = MaxRecall, fill = Tool)) +
 	ggtitle("Preibisch Lab Sim Set - Max Recall") +
 	scale_fill_manual(values = alpha(c("magenta", "red", "blue", "green", "yellow", "orange"), .3))
 	
-test_set <- filter(plabPlotTable, Tool == "DeepBlinkAlt")
+test_set <- filter(sfPlotTable, Tool == "DeepBlinkAlt")
 quantiles_recall <- quantile(test_set$MaxRecall, probs = c(0.25, 0.5, 0.75), na.rm = TRUE)
 mean_recall <- mean(test_set$MaxRecall, na.rm = TRUE)
 std_recall <- sd(test_set$MaxRecall, na.rm = TRUE)
@@ -210,6 +210,7 @@ spotFits <- data.frame(XY_DIST = c(fits_hb$XY_DIST, fits_bf$XY_DIST, fits_rs$XY_
 spotFits$TOOL <- factor(spotFits$TOOL, levels=c("NeuertLab", "Big-FISH", "RS-FISH", "DeepBlink"))
 
 #Maybe also remove spots too close to the edges of the image?
+subgroup_fits <- filter(fits_rs, XYZ_DIST < 1)
 	
 rm(fits_hb)
 rm(fits_bf)
@@ -243,16 +244,36 @@ ggplot(spotFits, aes(x = TOOL, y = Z_DIST, fill = TOOL)) +
 	theme_notforants +
 	ggtitle("Fit Z Distance from Reference") +
 	scale_fill_manual(values = alpha(c("red", "blue", "green", "yellow"), .3))
+	
+#Stats: Subpixel fits
+test_set <- filter(spotFits, TOOL == "RS-FISH")
+quantiles_fits <- quantile(test_set$XYZ_DIST, probs = c(0.25, 0.5, 0.75), na.rm = TRUE)
+mean_fits <- mean(test_set$XYZ_DIST, na.rm = TRUE)
+std_fits <- sd(test_set$XYZ_DIST, na.rm = TRUE)
+
+rm(test_set)
+rm(quantiles_fits)
+rm(mean_fits)
+rm(std_fits)
+
+test_set_a <- filter(spotFits, TOOL == "NeuertLab")
+test_set_b <- filter(spotFits, TOOL == "Big-FISH")
+test_res <- wilcox.test(test_set_a$XYZ_DIST, test_set_b$XYZ_DIST, na.rm = TRUE)
+
+rm(test_set_a)
+rm(test_set_b)
+rm(test_res)
 
 # ----------------> Plots against density and SNR (ZVP stuff too)
 
-snr_safe <- filter(plotTable, is.finite(SNR_DIFF))
+snr_safe <- filter(plotTable, is.finite(SNR))
 snr_safe <- filter(snr_safe, ZVP < 0.7)
 
+#Change x and y for whatever testing
 ggplot(snr_safe, aes(x = ZVP, y = FScore)) +
 	geom_density_2d_filled(bins = 50) + 
 	ylim(0.0, 1.0) +
-	xlim(0.0, 1.0) +
+	xlim(0.5, 1.0) +
 	facet_wrap(vars(Tool)) + 
 	scale_x_log10()
 
@@ -264,16 +285,63 @@ ggplot(snr_safe, aes(x = SNR_DIFF, y = PRAUC)) +
 	scale_fill_viridis_c() +
 	facet_wrap(vars(Tool))
 	
-#TODO ZVP and spot density plots too!
+#ZVP and spot density plots too!
+snr_safe <- filter(plotTable, is.finite(SNR_DIFF))
+
+#To reduce redundancy
+snr_safe <- filter(snr_safe, Tool == "NeuertLab")
+ggplot(snr_safe, aes(x = SNR, y = ZVP)) +
+	geom_density_2d_filled(bins = 50) + 
+	ylim(0.0, 1.0) +
+	scale_x_log10()
+
+snr_safe <- filter(plotTable, is.finite(SNR_DIFF))
+ggplot(snr_safe, aes(x = ZVP, y = FScore)) +
+	geom_density_2d_filled(bins = 50) + 
+	ylim(0.0, 1.0) +
+	xlim(0.0, 1.0) +
+	facet_wrap(vars(Tool))
+
+#X Trim
+ggplot(snr_safe, aes(x = ZVP, y = FScore)) +
+	geom_density_2d_filled(bins = 50) + 
+	ylim(0.0, 1.0) +
+	xlim(0.5, 1.0) +
+	facet_wrap(vars(Tool))
 
 # ----------------> PRAUC & FScore vs SNR at various ZVPs
+
+#No Cap
+snr_safe <- filter(plotTable, is.finite(SNR_DIFF))
+snr_safe <- filter(snr_safe, !is.nan(PRAUC))
+counttbl <- filter(snr_safe, Tool == "NeuertLab")
+counttbl <- filter(snr_safe, Tool == "DeepBlinkAlt")
+ggplot(snr_safe, aes(x = SNR, y = FScore)) +
+	geom_density_2d_filled(bins = 50) + 
+	ylim(0.0, 1.0) +
+	scale_x_log10() +
+	facet_wrap(vars(Tool))
+
+#ZVP
+snr_safe <- filter(plotTable, is.finite(SNR_DIFF))
+snr_safe <- filter(snr_safe, !is.nan(PRAUC))
+snr_safe <- filter(snr_safe, ZVP <= 0.6)
+counttbl1 <- filter(snr_safe, Tool == "NeuertLab")
+counttbl2 <- filter(snr_safe, Tool == "DeepBlinkAlt")
+ggplot(snr_safe, aes(x = SNR, y = FScore)) +
+	geom_density_2d_filled(bins = 50) + 
+	ylim(0.0, 1.0) +
+	scale_x_log10() +
+	facet_wrap(vars(Tool))
 	
 # ----------------> Spearman calculations
 
+cor_res_s <- cor.test(inputTable[,"FILT_PROP_ZERO"], inputTable[,"ALVL_TO_BKGVAR_SNR"], method = "spearman")
+
 cor_test_table <- plotTable
 tools_list <- c("NeuertLabUntrimmed", "NeuertLab", "Big-FISH", "RS-FISH", "DeepBlink", "DeepBlinkAlt")
-x_list <- c("SNR", "SNR_DIFF", "SNR", "SNR_DIFF", "ZVP", "SpotsBox", "SpotsBox", "SpotsBox", "SNR", "SNR_DIFF", "AmpVar", "AmpVar", "AmpVar")
-y_list <- c("PRAUC", "PRAUC", "FScore", "FScore", "FScore", "PRAUC", "FScore", "MaxRecall", "MaxRecall", "MaxRecall", "MaxRecall", "PRAUC", "FScore")
+x_list <- c("ZVP", "ZVP", "ZVP", "SNR", "SNR", "SNR", "SpotsBox", "SpotsBox", "SpotsBox", "AmpVar", "AmpVar", "AmpVar")
+y_list <- c("MaxRecall", "PRAUC", "FScore", "MaxRecall", "PRAUC", "FScore", "MaxRecall", "PRAUC", "FScore", "MaxRecall", "PRAUC", "FScore")
 
 pair_count <- length(x_list)
 tool_count <- length(tools_list)
@@ -290,10 +358,24 @@ sim_batch_cor$TOOL <- factor(sim_batch_cor$TOOL, levels=c("NeuertLabUntrimmed", 
 check_count = nrow(sim_batch_cor)
 for (i in 1:check_count){
 
-	tool_subset <- filter(cor_test_table, Tool == sim_batch_cor$TOOL[i])
-	cor_res_s <- cor.test(tool_subset[,sim_batch_cor$X_METRIC[i]], tool_subset[,sim_batch_cor$Y_METRIC[i]], method = "spearman")
+	if ((sim_batch_cor$Y_METRIC[i] == "FScore") && ((sim_batch_cor$TOOL[i] == "RS-FISH") || (sim_batch_cor$TOOL[i] == "DeepBlink") || (sim_batch_cor$TOOL[i] == "DeepBlinkAlt"))){
+	}
+	else{
+		tool_subset <- filter(cor_test_table, Tool == sim_batch_cor$TOOL[i])
+		cor_res_s <- cor.test(tool_subset[,sim_batch_cor$X_METRIC[i]], tool_subset[,sim_batch_cor$Y_METRIC[i]], method = "spearman")
 
-	sim_batch_cor$SPEARMAN_STAT[i] <- cor_res_s.statistic
-	sim_batch_cor$SPEARMAN_EST[i] <- cor_res_s.estimate
-	sim_batch_cor$SPEARMAN_P[i] <- cor_res_s.p.value
+		sim_batch_cor$SPEARMAN_STAT[i] <- cor_res_s$statistic[1]
+		sim_batch_cor$SPEARMAN_EST[i] <- cor_res_s$estimate[1]
+		sim_batch_cor$SPEARMAN_P[i] <- cor_res_s$p.value
+	}
 }
+
+# ----------------> Correlation for sim tc
+cy5l_only <- filter(inputTable, startsWith(IMGNAME, "simvarmass_CY5L_"))
+tmrl_only <- filter(inputTable, startsWith(IMGNAME, "simvarmass_TMRL_"))
+
+cor_res_simtc_s <- cor.test(cy5l_only[,"SPOTS_ACTUAL_XYTRIM"], cy5l_only[,"HBTr_SPOTS"], method = "spearman")
+cor_res_simtc_p <- cor.test(cy5l_only[,"SPOTS_ACTUAL_XYTRIM"], cy5l_only[,"HBTr_SPOTS"], method = "pearson")
+
+cor_res_simtc_s <- cor.test(tmrl_only[,"SPOTS_ACTUAL_XYTRIM"], tmrl_only[,"BFTr_SPOTS"], method = "spearman")
+cor_res_simtc_p <- cor.test(tmrl_only[,"SPOTS_ACTUAL_XYTRIM"], tmrl_only[,"BFTr_SPOTS"], method = "pearson")

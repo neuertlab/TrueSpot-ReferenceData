@@ -93,3 +93,69 @@ for (g in 1:group_count) {
 }
 
 exp_stats$GROUP_A <- factor(exp_stats$GROUP_A, levels = group_factor_order)
+
+# --- General group Stats
+tools_cycle_single <- c("NeuertLab", "Big-FISH", "RS-FISH", "DeepBlink")
+tools_cycle_single <- factor(tools_cycle_single, levels = tool_factor_order)
+tool_count <- length(tools_cycle_single)
+
+rm(exp_basic_stats)
+exp_basic_stats <- data.frame(TOOL = factor(),
+	GROUP = factor(),
+	METRIC = factor(),
+	PERC_25 = double(),
+	PERC_50 = double(),
+	PERC_75 = double(),
+	MEAN = double(),
+	STDEV = double()
+)
+
+group_count <- length(group_factor_order)
+for (g in 1:group_count) {
+
+	this_group <- group_factor_order[g]
+	group_records <- filter(expResPlotTable, GROUP_A == this_group)
+
+	exp_stats_group <- data.frame(TOOL = rep(tools_cycle_single, 3),
+		GROUP = rep(this_group, tool_count * 3),
+		METRIC = c(rep("MAX_RECALL", tool_count), rep("PR_AUC", tool_count), rep("F_SCORE", tool_count)),
+		PERC_25 = rep(NaN, tool_count * 3),
+		PERC_50 = rep(NaN, tool_count * 3),
+		PERC_75 = rep(NaN, tool_count * 3),
+		MEAN = rep(NaN, tool_count * 3),
+		STDEV = rep(NaN, tool_count * 3)
+		)
+	exp_stats_group$METRIC <- factor(exp_stats_group$METRIC, levels = metric_factor_order)	
+
+	#Compute stats here
+	for (j in 1:tool_count){
+		data_a <- filter(group_records, TOOL == tools_cycle_single[j])
+		
+		quantiles_g <- quantile(data_a$MAX_RECALL, probs = c(0.25, 0.5, 0.75), na.rm = TRUE)
+		exp_stats_group$MEAN[j] <- mean(data_a$MAX_RECALL, na.rm = TRUE)
+		exp_stats_group$STDEV[j] <- sd(data_a$MAX_RECALL, na.rm = TRUE)
+		exp_stats_group$PERC_25[j] <- quantiles_g[1]
+		exp_stats_group$PERC_50[j] <- quantiles_g[2]
+		exp_stats_group$PERC_75[j] <- quantiles_g[3]
+		
+		quantiles_g <- quantile(data_a$PR_AUC, probs = c(0.25, 0.5, 0.75), na.rm = TRUE)
+		exp_stats_group$MEAN[j + tool_count] <- mean(data_a$PR_AUC, na.rm = TRUE)
+		exp_stats_group$STDEV[j + tool_count] <- sd(data_a$PR_AUC, na.rm = TRUE)
+		exp_stats_group$PERC_25[j + tool_count] <- quantiles_g[1]
+		exp_stats_group$PERC_50[j + tool_count] <- quantiles_g[2]
+		exp_stats_group$PERC_75[j + tool_count] <- quantiles_g[3]
+		
+		quantiles_g <- quantile(data_a$FSCORE, probs = c(0.25, 0.5, 0.75), na.rm = TRUE)
+		exp_stats_group$MEAN[j + (tool_count*2)] <- mean(data_a$FSCORE, na.rm = TRUE)
+		exp_stats_group$STDEV[j + (tool_count*2)] <- sd(data_a$FSCORE, na.rm = TRUE)
+		exp_stats_group$PERC_25[j + (tool_count*2)] <- quantiles_g[1]
+		exp_stats_group$PERC_50[j + (tool_count*2)] <- quantiles_g[2]
+		exp_stats_group$PERC_75[j + (tool_count*2)] <- quantiles_g[3]
+		
+		rm(quantiles_g)
+		rm(data_a)
+	}
+
+	exp_basic_stats <- rbind(exp_basic_stats, exp_stats_group)
+	rm(exp_stats_group)
+}
