@@ -15,8 +15,13 @@ addpath('./test/datadump');
 
 % ========================== Constants ==========================
 
-START_INDEX = 159;
-END_INDEX = 190;
+START_INDEX = 75;
+END_INDEX = 272;
+
+%INCL_LIST = [];
+INCL_LIST = [76 80 88 90 93 98 104 105 108 112 121 ...
+    124 128 129 135 178 179 187 188 209 210 211 230 ...
+    246 247 248 250 251 252 256 259 261 263 267 272];
 
 DO_HOMEBREW = true;
 DO_BIGFISH = true;
@@ -28,8 +33,10 @@ NEW_TS_ONLY = false;
 
 OutputDir = [BaseDir filesep 'data' filesep 'results'];
 
+DEADPIX_WORKDIR = './bgh_old';
+
 RS_TH_IVAL = 0.1/250;
-SCRIPT_VER = 'v23.05.11.00';
+SCRIPT_VER = 'v23.07.12.01';
 COMPUTER_NAME = 'VU_NEUERTLAB_HOSPELB';
 
 EXPTS_INITIALS = 'BH';
@@ -52,6 +59,13 @@ if START_INDEX < 1; START_INDEX = 1; end
 if END_INDEX > entry_count; END_INDEX = entry_count; end
 
 for r = START_INDEX:END_INDEX
+
+    if ~isempty(INCL_LIST)
+        if ~ismember(r, INCL_LIST)
+            continue;
+        end
+    end
+
     is_sim = false;
     myname = getTableValue(image_table, r, 'IMGNAME');
     fprintf('> Now processing %s (%d of %d)...\n', myname, r, entry_count);
@@ -218,7 +232,7 @@ for r = START_INDEX:END_INDEX
             end
 
             %Apply filter to image.
-            [IMG_filtered] = RNA_Threshold_SpotDetector.run_spot_detection_pre(my_image, './test', true, gaussrad, false);
+            [IMG_filtered] = RNA_Threshold_SpotDetector.run_spot_detection_pre(my_image, DEADPIX_WORKDIR, true, gaussrad, false);
 
             %Do table transfer
             if NEW_TS_ONLY & isfield(analysis, 'results_hb')
@@ -237,7 +251,7 @@ for r = START_INDEX:END_INDEX
                         snapminth = spotsrun.intensity_threshold;
                     end
                 end
-                [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, 4, 2, snapminth);
+                [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, 4, 2, 1);
                 full_call_count = size(call_table, 1);
 
                 %if fnegs were added, get the intensity values for those
@@ -311,6 +325,10 @@ for r = START_INDEX:END_INDEX
             analysis.results_hb.x_max = X - gaussrad;
             analysis.results_hb.y_min = gaussrad;
             analysis.results_hb.y_max = Y - gaussrad;
+
+            if (spotsrun.z_min_apply < 0)
+                spotsrun = spotsrun.updateZTrimParams();
+            end
             analysis.results_hb.z_min = spotsrun.z_min_apply;
             analysis.results_hb.z_max = spotsrun.z_max_apply;
             analysis.results_hb.th_scan_min = spotsrun.t_min;
@@ -386,7 +404,7 @@ for r = START_INDEX:END_INDEX
                         snapminth = bfthresh;
                     end
                 end
-                [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, 4, 2, snapminth);
+                [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, 4, 2, 1);
                 full_call_count = size(call_table, 1);
 
                 if full_call_count > init_call_count
@@ -632,7 +650,7 @@ for r = START_INDEX:END_INDEX
                 init_call_count = size(call_table,1);
 
                 if ~isempty(ref_coords)
-                    [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, 4, 2, 0.5);
+                    [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, 4, 2, 0.001);
                     full_call_count = size(call_table, 1);
 
                     if full_call_count > init_call_count
@@ -837,7 +855,7 @@ function ref_coords = loadSimTruthsetRS(image_table, row_index, ImgDir)
     end
     
     import_table = table2array(readtable(srcpath,'ReadVariableNames',false));
-    import_table = import_table + 1;
+    %import_table = import_table + 1; %Not needed.
     temp = import_table(:,2);
     import_table(:,2) = import_table(:,1);
     import_table(:,1) = temp;
