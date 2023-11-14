@@ -129,7 +129,7 @@ As with Big-FISH and RS-FISH, the coordinate table is imported, rounded, and sto
 
 Results file consolidation is performed by `test_coordcleanup_230417.m` and `${TrueSpot_Repo}/core/RNACoords.m`, however unlike the other three tools, an extra step is required to make callsets comparable to truthsets or other callsets. DeepBlink operates in 2D, slice by slice. So while the output table includes z coordinates, there are a lot of redundant calls between slices resulting in an inflation in apparent false positives. The by-slice callsets were perserved in the composite results files, but 2D to 3D merging was performed (see `RNACoords.mergeSlicedSetTo3D`) to produce a 3D compatible callset.
 
-TODO: Alt model??
+The results from the DeepBlink retrained/"alt model" runs were imported into image results composite files using the `test_import_db_altmdl_230712.m` script. Images that were included in the training set were not run.
 
 ## Truthset Handling
 This section describes the generation and storage of truth sets, both for sim images and for experimental images.
@@ -161,9 +161,25 @@ Because experimental images had multiple manual curators, these sets are stored 
 This section describes how data were dumped from binary `mat` files storing detailed results to analysis-specific tables.
 
 ### Composite Result File Contents
-Callsets and performance stats for all tools are stored in MATLAB `mat` files for each benchmarked image.
+Callsets and performance stats for all tools are stored in MATLAB `mat` files for each benchmarked image. Each file contains a struct called `analysis` that contains all of the result data. The top level of `analysis` contains information pertaining to the image in general.
+
+![Figure describing the contents of the top level of two representative example results structs.](/doc/datadoc_resstruct_outer.png)
+
+Tool-specific results are in the sub-structures labeled `results_{TOOLABBR}`. Results for the retrained DeepBlink model, when present, can be found in `results_db_simmdl`.
+
+| Abbreviation | Tool |
+| ----- | ----- |
+| HB | TrueSpot ("Homebrew") |
+| BF | Big-FISH |
+| RS | RS-FISH |
+| DB | DeepBlink |
+
+Below is an example of a `results_hb` struct from a simulated image.
+
+![Figure describing the contents of a tool-specific results substruct using a representative example.](/doc/datadoc_resstruct_inner_hb.png)
 
 ### Simulated Image Summary Table
+The summary table used to run statistical tests and generate figures from the results of benchmarking tests on simulated images is `sim_results.csv`. This file was generated (the same process is used for regeneration) by running the `run_dump_allsim_230424` script, which cycles through the results `mat` files and dumps pertinent information into a plain text table. Simulation parameters for the earlier simulated images and RS-FISH benchmarking set had to be re-added manually as they are not stored in the results mat files. These parameters can be found in the included `sim_results.csv` and in one of the supplementary tables in the manuscript.
 
 ### Experimental Image Summary Table
 
