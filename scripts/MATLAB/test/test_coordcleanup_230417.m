@@ -31,12 +31,16 @@ DO_DEEPBLINK = true;
 DO_TRUTHSET = true;
 NEW_TS_ONLY = false;
 
+XTRIM = 7;
+YTRIM = 7;
+OLD_SPOTSRUN_DEF = true;
+
 OutputDir = [BaseDir filesep 'data' filesep 'results'];
 
 DEADPIX_WORKDIR = './bgh_old';
 
 RS_TH_IVAL = 0.1/250;
-SCRIPT_VER = 'v23.07.12.01';
+SCRIPT_VER = 'v23.11.15.00';
 COMPUTER_NAME = 'VU_NEUERTLAB_HOSPELB';
 
 EXPTS_INITIALS = 'BH';
@@ -222,14 +226,40 @@ for r = START_INDEX:END_INDEX
         %Look for run and load in coord and spot tables.
         spotsrun = RNASpotsRun.loadFrom(hb_stem);
         if ~isempty(spotsrun)
-            spotsrun.out_stem = hb_stem;
-            [~, spot_table] = spotsrun.loadSpotsTable();
-            [~, coord_table] = spotsrun.loadCoordinateTable();
+            if OLD_SPOTSRUN_DEF
+                spotsrun.out_stem = hb_stem;
+                gaussrad = spotsrun.dtune_gaussrad;
+                t_min = spotsrun.t_min;
+                t_max = spotsrun.t_max;
+                [~, spot_table] = spotsrun.loadSpotsTable();
+                [~, coord_table] = spotsrun.loadCoordinateTable();
 
-            gaussrad = spotsrun.dtune_gaussrad;
+                if (spotsrun.z_min_apply < 0)
+                    spotsrun = spotsrun.updateZTrimParams();
+                end
+                z_min_apply = spotsrun.z_min_apply;
+                z_max_apply = spotsrun.z_max_apply;
+            else
+                [spotsrun.paths.out_dir, spotsrun.paths.out_namestem] = fileparts(hb_stem);
+                gaussrad = spotsrun.options.dtune_gaussrad;
+                t_min = spotsrun.options.t_min;
+                t_max = spotsrun.options.t_max;
+                [~, spot_table] = spotsrun.loadSpotsTable();
+
+                if (spotsrun.dims.z_min_apply < 0)
+                    spotsrun = spotsrun.updateZTrimParams();
+                end
+                z_min_apply = spotsrun.dims.z_min_apply;
+                z_max_apply = spotsrun.dims.z_max_apply;
+            end
+
             if gaussrad < 1
                 gaussrad = 7;
             end
+            hb_xtrim = XTRIM;
+            hb_ytrim = YTRIM;
+            if gaussrad > hb_xtrim; hb_xtrim = gaussrad; end
+            if gaussrad > hb_ytrim; hb_ytrim = gaussrad; end
 
             %Apply filter to image.
             [IMG_filtered] = RNA_Threshold_SpotDetector.run_spot_detection_pre(my_image, DEADPIX_WORKDIR, true, gaussrad, false);
@@ -238,7 +268,11 @@ for r = START_INDEX:END_INDEX
             if NEW_TS_ONLY & isfield(analysis, 'results_hb')
                 call_table = analysis.results_hb.callset;
             else
-                call_table = RNACoords.convertOldCoordTable(spot_table, coord_table, IMG_filtered, my_image, 2);
+                if OLD_SPOTSRUN_DEF
+                    call_table = RNACoords.convertOldCoordTable(spot_table, coord_table, IMG_filtered, my_image, 2);
+                else
+                    [~, call_table] = spotsrun.loadCallTable();
+                end
             end
             init_call_count = size(call_table,1);
 
@@ -271,12 +305,12 @@ for r = START_INDEX:END_INDEX
                     %out)
                     fneg_count = added - addst + 1;
                     fneg_trimmed = false(fneg_count,1);
-                    fneg_trimmed = or(fneg_trimmed, x <= gaussrad);
-                    fneg_trimmed = or(fneg_trimmed, x > (X - gaussrad));
-                    fneg_trimmed = or(fneg_trimmed, y <= gaussrad);
-                    fneg_trimmed = or(fneg_trimmed, y > (Y - gaussrad));
-                    fneg_trimmed = or(fneg_trimmed, z < spotsrun.z_min_apply);
-                    fneg_trimmed = or(fneg_trimmed, z > spotsrun.z_max_apply);
+                    fneg_trimmed = or(fneg_trimmed, x <= hb_xtrim);
+                    fneg_trimmed = or(fneg_trimmed, x > (X - hb_xtrim));
+                    fneg_trimmed = or(fneg_trimmed, y <= hb_ytrim);
+                    fneg_trimmed = or(fneg_trimmed, y > (Y - hb_ytrim));
+                    fneg_trimmed = or(fneg_trimmed, z < z_min_apply);
+                    fneg_trimmed = or(fneg_trimmed, z > z_max_apply);
                     call_table(addst:added,'is_trimmed_out') = array2table(fneg_trimmed);
                     clear addst added x y z fneg_trimmed c1d
                 end
@@ -321,18 +355,15 @@ for r = START_INDEX:END_INDEX
             analysis.results_hb.threshold = spotsrun.intensity_threshold;
             analysis.results_hb.threshold_details = spotsrun.threshold_results;
             analysis.results_hb.gaussrad_xy = gaussrad;
-            analysis.results_hb.x_min = gaussrad;
-            analysis.results_hb.x_max = X - gaussrad;
-            analysis.results_hb.y_min = gaussrad;
-            analysis.results_hb.y_max = Y - gaussrad;
+            analysis.results_hb.x_min = hb_xtrim + 1;
+            analysis.results_hb.x_max = X - hb_xtrim;
+            analysis.results_hb.y_min = hb_ytrim + 1;
+            analysis.results_hb.y_max = Y - hb_ytrim;
 
-            if (spotsrun.z_min_apply < 0)
-                spotsrun = spotsrun.updateZTrimParams();
-            end
-            analysis.results_hb.z_min = spotsrun.z_min_apply;
-            analysis.results_hb.z_max = spotsrun.z_max_apply;
-            analysis.results_hb.th_scan_min = spotsrun.t_min;
-            analysis.results_hb.th_scan_max = spotsrun.t_max;
+            analysis.results_hb.z_min = z_min_apply;
+            analysis.results_hb.z_max = z_max_apply;
+            analysis.results_hb.th_scan_min = t_min;
+            analysis.results_hb.th_scan_max = t_max;
 
             if ~isempty(IMG_filtered)
                 %Take some filtered image stats.
@@ -358,6 +389,7 @@ for r = START_INDEX:END_INDEX
                 clear imgf_trimmed x0 x1 y0 y1 z0 z1 used_z used_y used_z
             end
 
+            analysis.results_hb = applyTrimToCalls(analysis.results_hb, analysis.image_dims);
             if ~isempty(ref_coords)
                 %Calculate performance metrics
                 analysis.results_hb = runstats(analysis.results_hb, spot_table, spotsrun.intensity_threshold);
@@ -367,7 +399,8 @@ for r = START_INDEX:END_INDEX
             if ~is_sim & ~isempty(ref_coords) & ~isempty(EXPTS_INITIALS)
                 analysis.results_hb = markTSStats(analysis.results_hb, EXPTS_INITIALS);
             end
-            clear call_table coord_table spot_table IMG_filtered gaussrad ref_call_map;
+            clear z_min_apply z_max_apply
+            clear call_table coord_table spot_table IMG_filtered gaussrad ref_call_map hb_xtrim hb_ytrim t_min t_max;
         else
             fprintf('ERROR: Could not find HB run for %s!\n', myname);
         end
@@ -486,8 +519,14 @@ for r = START_INDEX:END_INDEX
             analysis.results_bf.import_computer = COMPUTER_NAME;
             analysis.results_bf.callset = call_table;
             analysis.results_bf.threshold = bfthresh;
+
+            analysis.results_bf.x_min = XTRIM + 1;
+            analysis.results_bf.x_max = X - XTRIM;
+            analysis.results_bf.y_min = YTRIM + 1;
+            analysis.results_bf.y_max = Y - YTRIM;
             analysis.results_bf.z_min = zmin;
             analysis.results_bf.z_max = zmax;
+            analysis.results_bf = applyTrimToCalls(analysis.results_bf, analysis.image_dims);
 
             if ~isempty(ref_coords)
                 %Calculate performance metrics
@@ -589,6 +628,12 @@ for r = START_INDEX:END_INDEX
                 analysis.results_rs.timestamp = datetime;
                 analysis.results_rs.import_computer = COMPUTER_NAME;
                 analysis.results_rs.callset = call_table;
+
+                analysis.results_rs.x_min = XTRIM + 1;
+                analysis.results_rs.x_max = X - XTRIM;
+                analysis.results_rs.y_min = YTRIM + 1;
+                analysis.results_rs.y_max = Y - YTRIM;
+                analysis.results_rs = applyTrimToCalls(analysis.results_rs, analysis.image_dims);
 
                 if ~isempty(ref_coords)
                     %Calculate performance metrics
@@ -702,6 +747,12 @@ for r = START_INDEX:END_INDEX
                 analysis.results_db.callset = call_table;
                 analysis.results_db.callset_sliced = call_table_raw;
                 analysis.results_db.callmap_slice_merge = callmap;
+
+                analysis.results_db.x_min = XTRIM + 1;
+                analysis.results_db.x_max = X - XTRIM;
+                analysis.results_db.y_min = YTRIM + 1;
+                analysis.results_db.y_max = Y - YTRIM;
+                analysis.results_db = applyTrimToCalls(analysis.results_db, analysis.image_dims);
 
                 if ~isempty(ref_coords)
                     %Calculate performance metrics
@@ -984,7 +1035,176 @@ function rstruct = markTSStats(rstruct, tag)
 
 end
 
+function rstruct = applyTrimToCalls(rstruct, dims)
+    X = dims.x;
+    Y = dims.y;
+    Z = dims.z;
+
+    x_min = 1;
+    x_max = X;
+    if isfield(rstruct, 'x_min')
+        x_min = rstruct.x_min;
+    end
+    if isfield(rstruct, 'x_max')
+        x_max = rstruct.x_max;
+    end
+
+    y_min = 1;
+    y_max = Y;
+    if isfield(rstruct, 'y_min')
+        y_min = rstruct.y_min;
+    end
+    if isfield(rstruct, 'y_max')
+        y_max = rstruct.y_max;
+    end
+
+    xx = rstruct.callset{:,'isnap_x'};
+    x_pass = and(xx >= x_min, xx <= x_max);
+    yy = rstruct.callset{:,'isnap_y'};
+    y_pass = and(yy >= y_min, yy <= y_max);
+
+    z_min = 1;
+    z_max = Z;
+    if isfield(rstruct, 'z_min')
+        z_min = rstruct.z_min;
+    end
+    if isfield(rstruct, 'z_max')
+        z_max = rstruct.z_max;
+    end
+
+    zz = rstruct.callset{:,'isnap_z'};
+    z_pass = and(zz >= z_min, zz <= z_max);
+    all_pass = and(x_pass, y_pass);
+    all_pass = and(all_pass, z_pass);
+
+    rstruct.callset{:,'is_trimmed_out'} = ~all_pass;
+end
+
 function rstruct = runstats(rstruct, spot_table, th_val)
+
+    if nargin < 3; th_val = 0; end
+
+    call_table = rstruct.callset;
+    vec_istrimmed = table2array(call_table(:,'is_trimmed_out'));
+    vec_intsreg = table2array(call_table(:,'in_truth_region'));
+    vec_isreal = table2array(call_table(:,'is_true'));
+    vec_dropth = table2array(call_table(:,'dropout_thresh'));
+
+    any_trimmed = nnz(vec_istrimmed) > 0;
+    
+    th_count = size(spot_table,1);
+    res_untrimmed = ImageResults.initializeResTable(th_count);
+    res_trimmed = table.empty();
+
+    thval_tbl = array2table(double(spot_table(:,1)));
+    res_untrimmed(:,'thresholdValue') = thval_tbl;
+
+    if any_trimmed
+        res_trimmed = ImageResults.initializeResTable(th_count);
+        res_trimmed(:,'thresholdValue') = thval_tbl;
+    else
+        %Clean trimmed struct if it is present
+        if isfield(rstruct, 'performance_trimmed')
+            rstruct = rmfield(rstruct, 'performance_trimmed');
+        end
+        if isfield(rstruct, 'pr_auc_trimmed')
+            rstruct = rmfield(rstruct, 'pr_auc_trimmed');
+        end
+        if isfield(rstruct, 'fscore_peak_trimmed')
+            rstruct = rmfield(rstruct, 'fscore_peak_trimmed');
+        end
+        if isfield(rstruct, 'fscore_autoth_trimmed')
+            rstruct = rmfield(rstruct, 'fscore_autoth_trimmed');
+        end
+    end
+
+    sc_all = NaN(th_count,2);
+    tp_all = NaN(th_count,2);
+    fp_all = NaN(th_count,2);
+    fn_all = NaN(th_count,2);
+    for t = 1:th_count
+        th = spot_table(t,1);
+        pos_vec = (vec_dropth >= th) & vec_intsreg;
+        tp_vec = pos_vec & vec_isreal;
+        fp_vec = pos_vec & ~vec_isreal;
+        fn_vec = (vec_dropth < th) & vec_intsreg & vec_isreal;
+
+        tp_all(t,1) = nnz(tp_vec);
+        fp_all(t,1) = nnz(fp_vec);
+        fn_all(t,1) = nnz(fn_vec);
+        sc_all(t,1) = nnz(pos_vec);
+
+        %Repeat for trimmed, if applicable
+        if any_trimmed
+            pos_vec = (vec_dropth >= th) & vec_intsreg & ~vec_istrimmed;
+            neg_vec = (vec_dropth < th) & vec_intsreg & ~vec_istrimmed;
+            tp_vec = pos_vec & vec_isreal;
+            fp_vec = pos_vec & ~vec_isreal;
+            fn_vec = neg_vec & vec_isreal;
+
+            tp_all(t,2) = nnz(tp_vec);
+            fp_all(t,2) = nnz(fp_vec);
+            fn_all(t,2) = nnz(fn_vec);
+            sc_all(t,2) = nnz(pos_vec);
+        end
+    end
+
+    %Let's speed up the easy calculations...
+    res_untrimmed(:, 'spotCount') = array2table(uint32(sc_all(:,1)));
+    res_untrimmed(:, 'true_pos') = array2table(uint32(tp_all(:,1)));
+    res_untrimmed(:, 'false_pos') = array2table(uint32(fp_all(:,1)));
+    res_untrimmed(:, 'false_neg') = array2table(uint32(fn_all(:,1)));
+
+    recall = tp_all(:,1) ./ (tp_all(:,1) + fn_all(:,1));
+    precision = tp_all(:,1) ./ (tp_all(:,1) + fp_all(:,1));
+    fscores = (2 .* precision .* recall) ./ (precision + recall);
+    pr_auc = RNAUtils.calculateAUC(recall, precision);
+    peak_fscore = max(fscores, [], 'all');
+    res_untrimmed(:, 'sensitivity') = array2table(recall);
+    res_untrimmed(:, 'precision') = array2table(precision);
+    res_untrimmed(:, 'fScore') = array2table(fscores);
+    if any_trimmed
+        res_trimmed(:, 'spotCount') = array2table(uint32(sc_all(:,2)));
+        res_trimmed(:, 'true_pos') = array2table(uint32(tp_all(:,2)));
+        res_trimmed(:, 'false_pos') = array2table(uint32(fp_all(:,2)));
+        res_trimmed(:, 'false_neg') = array2table(uint32(fn_all(:,2)));
+
+        recall = tp_all(:,2) ./ (tp_all(:,2) + fn_all(:,2));
+        precision = tp_all(:,2) ./ (tp_all(:,2) + fp_all(:,2));
+        fscores = (2 .* precision .* recall) ./ (precision + recall);
+        pr_auc_trim = RNAUtils.calculateAUC(recall, precision);
+        peak_fscore_trim = max(fscores, [], 'all');
+        res_trimmed(:, 'sensitivity') = array2table(recall);
+        res_trimmed(:, 'precision') = array2table(precision);
+        res_trimmed(:, 'fScore') = array2table(fscores);
+    end
+
+    th_idx = 0;
+    if th_val > 0
+        th_idx = RNAUtils.findThresholdIndex(th_val, spot_table(:,1).');
+    end
+
+    %Save to output struct
+    rstruct.performance = res_untrimmed;
+    rstruct.pr_auc = pr_auc;
+    rstruct.fscore_peak = peak_fscore;
+    if th_idx > 0
+        rstruct.fscore_autoth = res_untrimmed{th_idx, 'fScore'};
+    end
+    if any_trimmed
+        rstruct.performance_trimmed = res_trimmed;
+        rstruct.pr_auc_trimmed = pr_auc_trim;
+        rstruct.fscore_peak_trimmed = peak_fscore_trim;
+        if th_idx > 0
+            rstruct.fscore_autoth_trimmed = res_trimmed{th_idx, 'fScore'};
+        end
+    end
+
+    rstruct.timestamp = datetime();
+
+end
+
+function rstruct = runstats_old(rstruct, spot_table, th_val)
 
     if nargin < 3; th_val = 0; end
 
