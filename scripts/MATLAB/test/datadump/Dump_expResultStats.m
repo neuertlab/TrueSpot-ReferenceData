@@ -2,7 +2,8 @@
 %%
 
 %RECALL is maximum recall
-%IMGNAME GROUP_A GROUP_B HB_RECALL HB_AUC HB_FSCORE BF_RECALL BF_AUC
+%IMGNAME GROUP_A GROUP_B HB_COUNT HB_RECALL HB_AUC HB_FSCORE 
+% BF_COUNT BF_RECALL BF_AUC
 %BF_FSCORE RS_RECALL RS_AUC DB_RECALL DB_AUC
 
 function Dump_expResultStats(outputFile, analysis)
@@ -45,7 +46,7 @@ function printHBRes(outputFile, analysis)
         if isfield(analysis.results_hb, 'truthset_BH')
             resStruct = analysis.results_hb.truthset_BH;
         end
-        printRes(outputFile, resStruct, true, true);
+        printRes(outputFile, resStruct, true, true, analysis.results_hb.threshold);
     else
         fprintf(outputFile, 'NaN\tNaN\tNaN\t');
     end
@@ -60,7 +61,7 @@ function printBFRes(outputFile, analysis)
         if isfield(analysis.results_bf, 'truthset_BH')
             resStruct = analysis.results_bf.truthset_BH;
         end
-        printRes(outputFile, resStruct, true, true);
+        printRes(outputFile, resStruct, true, true, analysis.results_bf.threshold);
     else
         fprintf(outputFile, 'NaN\tNaN\tNaN\t');
     end
@@ -97,9 +98,16 @@ function printDBRes(outputFile, analysis)
 
 end
 
-function printRes(outputFile, resStruct, inclFScore, endTab)
+function printRes(outputFile, resStruct, inclFScore, endTab, thval)
+
+    if nargin < 5
+        thval = 0;
+    end
 
     if isempty(resStruct)
+        if inclFScore
+            fprintf(outputFile, 'NaN\t');
+        end
         fprintf(outputFile, 'NaN\tNaN');
         if inclFScore
             fprintf(outputFile, '\tNaN');
@@ -109,6 +117,11 @@ function printRes(outputFile, resStruct, inclFScore, endTab)
     end
 
     if isfield(resStruct, 'performance_trimmed')
+        if inclFScore
+            thidx = RNAUtils.findThresholdIndex(thval, resStruct.performance_trimmed{:,'thresholdValue'});
+            fprintf(outputFile, '%d\t', resStruct.performance_trimmed{thidx,'spotCount'});
+        end
+
         max_recall = max(resStruct.performance_trimmed{:,'sensitivity'}, [], 'all');
         fprintf(outputFile, '%f\t', max_recall);
         fprintf(outputFile, '%f', resStruct.pr_auc_trimmed);
@@ -116,6 +129,11 @@ function printRes(outputFile, resStruct, inclFScore, endTab)
             fprintf(outputFile, '\t%f', resStruct.fscore_autoth_trimmed);
         end
     elseif isfield(resStruct, 'performance')
+        if inclFScore
+            thidx = RNAUtils.findThresholdIndex(thval, resStruct.performance{:,'thresholdValue'});
+            fprintf(outputFile, '%d\t', resStruct.performance{thidx,'spotCount'});
+        end
+
         max_recall = max(resStruct.performance{:,'sensitivity'}, [], 'all');
         fprintf(outputFile, '%f\t', max_recall);
         fprintf(outputFile, '%f', resStruct.pr_auc);
@@ -123,6 +141,9 @@ function printRes(outputFile, resStruct, inclFScore, endTab)
             fprintf(outputFile, '\t%f', resStruct.fscore_autoth);
         end
     else
+        if inclFScore
+            fprintf(outputFile, 'NaN\t');
+        end
         fprintf(outputFile, 'NaN\tNaN');
         if inclFScore
             fprintf(outputFile, '\tNaN');

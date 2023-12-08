@@ -18,7 +18,7 @@ scriptCtx = genScriptContextStruct(BaseDir);
 scriptCtx.ImgProcDir = ImgProcDir;
 scriptCtx.ImgDir = ImgDir;
 
-scriptCtx.DateSuffix = '231013';
+scriptCtx.DateSuffix = '231206';
 scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
 
 % ========================== Parameters ==========================
@@ -27,7 +27,8 @@ TablePath_Main = [BaseDir filesep 'test_images.csv'];
 TablePath_Mass = [BaseDir filesep 'test_images_simvarmass.csv'];
 TablePath_YTC = [BaseDir filesep 'test_images_simytc.csv'];
 
-AllTablePaths = {TablePath_Main, TablePath_Mass, TablePath_YTC};
+%AllTablePaths = {TablePath_Main, TablePath_Mass, TablePath_YTC};
+AllTablePaths = {TablePath_Mass, TablePath_YTC};
 ImgTableCount = size(AllTablePaths, 2);
 
 % ========================== Main Loop ==========================
@@ -76,8 +77,12 @@ function ctx = initialize(ctx)
 
     %ctx = open_sctcOutput(ctx);
     %ctx = openExpDumpOutput(ctx);
+    ctx = openCountDumpOutput(ctx);
 
-    ctx = open_sctcSimCountOutput(ctx);
+    %ctx = open_sctcSimCountOutput(ctx);
+
+    %ctx.coords_dir = [ctx.OutputDir filesep 'coords_dump'];
+    %mkdir(ctx.coords_dir);
 end
 
 function ctx = finalize(ctx)
@@ -93,8 +98,12 @@ function doTheThing(ctx, analysis)
     %TODO fill in action here.
     %Dump_ThreshTable(ctx.OutputHandle, analysis);
 
-    do_sctcIndiv(ctx, analysis);
+    %do_sctcIndiv(ctx, analysis);
     %Dump_expResultStats(ctx.OutputHandle, analysis);
+
+    dumpCountsIndiv(ctx, analysis);
+
+    %Dump_JustCoords_231128(analysis, [ctx.coords_dir filesep analysis.imgname '_calls.mat']);
 
     %Look for truthset
 %     if isfield(analysis, 'simkey') | isfield(analysis, 'exprefset')
@@ -105,8 +114,8 @@ end
 
 function bool_res = shouldSkip(imgName)
     %TODO fill in action here.
-    %bool_res = false;
-    bool_res = skip_sctc(imgName);
+    bool_res = false;
+    %bool_res = skip_sctc(imgName);
 end
 
 function ctx = genScriptContextStruct(basedir)
@@ -153,9 +162,25 @@ function ctx = openExpDumpOutput(ctx)
     ctx.OutputHandle = fopen(outpath, 'w');
 
     %Header
-    outfields = {'IMGNAME' 'GROUP_A' 'GROUP_B' 'HB_MAXREC', 'HB_AUC', 'HB_FSCORE',...
-        'BF_MAXREC', 'BF_AUC', 'BF_FSCORE', 'RS_MAXREC', 'RS_AUC',...
-        'DB_MAXREC', 'DB_AUC'};
+    outfields = {'IMGNAME' 'GROUP_A' 'GROUP_B', ...
+        'HB_COUNT', 'HB_MAXREC', 'HB_AUC', 'HB_FSCORE',...
+        'BF_COUNT', 'BF_MAXREC', 'BF_AUC', 'BF_FSCORE',...
+        'RS_MAXREC', 'RS_AUC', 'DB_MAXREC', 'DB_AUC'};
+    field_count = size(outfields, 2);
+    for i = 1:field_count
+        if i > 1; fprintf(ctx.OutputHandle, '\t'); end
+        fprintf(ctx.OutputHandle, outfields{i});
+    end
+    fprintf(ctx.OutputHandle, '\n');
+end
+
+function ctx = openCountDumpOutput(ctx)
+    outpath = [ctx.OutputDir filesep 'spotCountsDump_' ctx.DateSuffix '.tsv'];
+    ctx.OutputHandle = fopen(outpath, 'w');
+
+    %Header
+    outfields = {'IMGNAME' 'GROUP' 'COUNT_HB' 'COUNT_BF'...
+        'COUNT_RS' 'COUNT_DB' 'RS_TH' 'DB_TH'};
     field_count = size(outfields, 2);
     for i = 1:field_count
         if i > 1; fprintf(ctx.OutputHandle, '\t'); end
@@ -289,4 +314,71 @@ function bool_res = skip_sctc(imgname)
             bool_res = false;
         end
     end
+end
+
+function dumpCountsIndiv(ctx, analysis)
+    fprintf(ctx.OutputHandle, '%s\t', analysis.imgname);
+    fprintf(ctx.OutputHandle, '.\t');
+
+    if isfield(analysis, 'results_hb')
+        thval = analysis.results_hb.threshold;
+        callset_t = TrimCallsetEdges(analysis.results_hb, analysis.image_dims);
+        if ~isempty(callset_t)
+            count = nnz(callset_t{:, 'dropout_thresh'} >= thval);
+        else
+            count = 0;
+        end
+
+        fprintf(ctx.OutputHandle, '%d\t', count);
+    else
+        fprintf(ctx.OutputHandle, 'NaN\t');
+    end
+
+    if isfield(analysis, 'results_bf')
+        thval = analysis.results_bf.threshold;
+        callset_t = TrimCallsetEdges(analysis.results_bf, analysis.image_dims);
+        if ~isempty(callset_t)
+            count = nnz(callset_t{:, 'dropout_thresh'} >= thval);
+        else
+            count = 0;
+        end
+
+        fprintf(ctx.OutputHandle, '%d\t', count);
+    else
+        fprintf(ctx.OutputHandle, 'NaN\t');
+    end
+
+    rs_th = 0;
+    if isfield(analysis, 'results_rs')
+        rs_th = AutothreshRS(analysis.results_rs, analysis.image_dims);
+        callset_t = TrimCallsetEdges(analysis.results_rs, analysis.image_dims);
+        if ~isempty(callset_t)
+            count = nnz(callset_t{:, 'dropout_thresh'} >= rs_th);
+        else
+            count = 0;
+        end
+
+        fprintf(ctx.OutputHandle, '%d\t', count);
+    else
+        fprintf(ctx.OutputHandle, 'NaN\t');
+    end
+
+    db_th = 0;
+    if isfield(analysis, 'results_db')
+        db_th = 0.95;
+        callset_t = TrimCallsetEdges(analysis.results_db, analysis.image_dims);
+        if ~isempty(callset_t)
+            count = nnz(callset_t{:, 'dropout_thresh'} >= db_th);
+        else
+            count = 0;
+        end
+
+        fprintf(ctx.OutputHandle, '%d\t', count);
+    else
+        fprintf(ctx.OutputHandle, 'NaN\t');
+    end
+
+    fprintf(ctx.OutputHandle, '%.4f\t', rs_th);
+    fprintf(ctx.OutputHandle, '%.2f\n', db_th);
+
 end

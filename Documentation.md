@@ -164,7 +164,7 @@ Because experimental images had multiple manual curators, these sets are stored 
 ## Data Organization
 This section describes how data were dumped from binary `mat` files storing detailed results to analysis-specific tables.
 
-**Note: ** The `bp_fullset_230612.m` script and the R scripts used for figure generation and stats calculation were designed to be run in pieces in their respective interpreters or with lines being commented in or out as needed to suit different purposes. They should be viewed more as files containing collections of code lines rather than full executable scripts.
+**Note:** The `bp_fullset_230612.m` script and the R scripts used for figure generation and stats calculation were designed to be run in pieces in their respective interpreters or with lines being commented in or out as needed to suit different purposes. They should be viewed more as files containing collections of code lines rather than full executable scripts.
 
 `bp_fullset_230612.m` was written as a "boiler-plate" for scanning through the set of all results files and doing something with each, as copypasting that code into fresh dump scripts was getting tiresome. Instead of writing a new script for each dump, one can change the contents of the `initialize` (for doing something before the loop through results files), `shouldSkip` which determines whether to skip the image in question without opening the result file to save time, `doTheThing` which does something with the contents of each result file, and `finalize` for doing something after the loop.
 
@@ -240,8 +240,22 @@ MW_p = test_res$p.value
 The boiler-plate code for the subpixel fit analyses are also in `simResults.R`, and the output is in Table S11A-C as of writing. Quartiles, mean, standard deviation, and Mann-Whitney comparisons were also run for distributions of spot distances in xy, z, and xyz. However, as the n for these sets is extremely high the usefulness of the Mann-Whitney tests is questionable. Still, the rough versions of the code used is the same as in the previous section, just using the fit distance datasets and metrics instead.
 
 ### Parameter Correlations - Simulated Images
+Spearman correlation tests were performed to test for correlation between two parameters in a batch of simulated images (we chose Spearman over Pearson to prioritize non-linear correlations as initial plots seemed to indicate possible prevalence of such relationships for these datasets). The code for these too can be found in `simResults.R`.
+
+This too was run in a loop to compare different combinations of parameters subsetting by tool and simulated images and stored in a table.
+```
+tool_subset <- filter(DATA_TABLE, Tool == TOOL_NAME)
+cor_res_s <- cor.test(tool_subset[,X_METRIC], tool_subset[,Y_METRIC], method = "spearman")
+
+SPEARMAN_STAT <- cor_res_s$statistic[1]
+SPEARMAN_EST <- cor_res_s$estimate[1]
+SPEARMAN_P <- cor_res_s$p.value
+```
 
 ### Performance Metrics - Experimental Images
+These are calculated the same was as with the simulated images, only they are split into more groups. For experimental images, the code looped through the groups and tools to create tables of MW comparisons and distribution statistics.
+
+The code for performance evaluation and figure generation on the experimental images can be found in `/scripts/Figure Generation/expResults.R`.
 
 ### Count Correlations - Yeast Time Course-Like Simulations
 
