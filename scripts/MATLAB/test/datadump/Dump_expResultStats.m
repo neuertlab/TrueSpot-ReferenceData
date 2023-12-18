@@ -6,7 +6,7 @@
 % BF_COUNT BF_RECALL BF_AUC
 %BF_FSCORE RS_RECALL RS_AUC DB_RECALL DB_AUC
 
-function Dump_expResultStats(outputFile, analysis)
+function Dump_expResultStats(outputFile, analysis, refsetId)
 
     if isempty(outputFile); return; end
     if isempty(analysis); return; end
@@ -19,7 +19,10 @@ function Dump_expResultStats(outputFile, analysis)
         return;
     end
 
-    if ~isfield(analysis, 'exprefset')
+    if ~isfield(analysis, 'refsets')
+        return;
+    end
+    if ~isfield(analysis.refsets, refsetId)
         return;
     end
 
@@ -30,81 +33,65 @@ function Dump_expResultStats(outputFile, analysis)
     %Determine groups
     printGroups(outputFile, analysis);
 
-    printHBRes(outputFile, analysis);
-    printBFRes(outputFile, analysis);
-    printRSRes(outputFile, analysis);
-    printDBRes(outputFile, analysis);
+    printHBRes(outputFile, analysis, refsetId);
+    printBFRes(outputFile, analysis, refsetId);
+    printRSRes(outputFile, analysis, refsetId);
+    printDBRes(outputFile, analysis, refsetId);
 
     fprintf(outputFile, '\n');
 end
 
-function printHBRes(outputFile, analysis)
+function printHBRes(outputFile, analysis, refsetId)
 
     if isfield(analysis, 'results_hb')
-        %Look for results BH
         resStruct = analysis.results_hb;
-        if isfield(analysis.results_hb, 'truthset_BH')
-            resStruct = analysis.results_hb.truthset_BH;
-        end
-        printRes(outputFile, resStruct, true, true, analysis.results_hb.threshold);
+        printRes(outputFile, resStruct, true, true, analysis.results_hb.threshold, refsetId);
     else
         fprintf(outputFile, 'NaN\tNaN\tNaN\t');
     end
 
 end
 
-function printBFRes(outputFile, analysis)
+function printBFRes(outputFile, analysis, refsetId)
 
     if isfield(analysis, 'results_bf')
-        %Look for results BH
         resStruct = analysis.results_bf;
-        if isfield(analysis.results_bf, 'truthset_BH')
-            resStruct = analysis.results_bf.truthset_BH;
-        end
-        printRes(outputFile, resStruct, true, true, analysis.results_bf.threshold);
+        printRes(outputFile, resStruct, true, true, analysis.results_bf.threshold, refsetId);
     else
         fprintf(outputFile, 'NaN\tNaN\tNaN\t');
     end
 
 end
 
-function printRSRes(outputFile, analysis)
+function printRSRes(outputFile, analysis, refsetId)
 
     if isfield(analysis, 'results_rs')
-        %Look for results BH
         resStruct = analysis.results_rs;
-        if isfield(analysis.results_rs, 'truthset_BH')
-            resStruct = analysis.results_rs.truthset_BH;
-        end
-        printRes(outputFile, resStruct, false, true);
+        printRes(outputFile, resStruct, false, true, 0, refsetId);
     else
         fprintf(outputFile, 'NaN\tNaN\t');
     end
 
 end
 
-function printDBRes(outputFile, analysis)
+function printDBRes(outputFile, analysis, refsetId)
 
     if isfield(analysis, 'results_db')
-        %Look for results BH
         resStruct = analysis.results_db;
-        if isfield(analysis.results_db, 'truthset_BH')
-            resStruct = analysis.results_db.truthset_BH;
-        end
-        printRes(outputFile, resStruct, false, false);
+        printRes(outputFile, resStruct, false, false, 0, refsetId);
     else
         fprintf(outputFile, 'NaN\tNaN');
     end
 
 end
 
-function printRes(outputFile, resStruct, inclFScore, endTab, thval)
+function printRes(outputFile, resStruct, inclFScore, endTab, thval, refsetId)
 
     if nargin < 5
         thval = 0;
     end
 
-    if isempty(resStruct)
+    if isempty(resStruct) | ~isfield(resStruct, 'benchmarks') | ~isfield(resStruct.benchmarks, refsetId)
         if inclFScore
             fprintf(outputFile, 'NaN\t');
         end
@@ -116,29 +103,31 @@ function printRes(outputFile, resStruct, inclFScore, endTab, thval)
         return;
     end
 
-    if isfield(resStruct, 'performance_trimmed')
+    perfStruct = resStruct.benchmarks.(refsetId);
+
+    if isfield(perfStruct, 'performance_trimmed')
         if inclFScore
-            thidx = RNAUtils.findThresholdIndex(thval, resStruct.performance_trimmed{:,'thresholdValue'});
-            fprintf(outputFile, '%d\t', resStruct.performance_trimmed{thidx,'spotCount'});
+            thidx = RNAUtils.findThresholdIndex(thval, perfStruct.performance_trimmed{:,'thresholdValue'});
+            fprintf(outputFile, '%d\t', perfStruct.performance_trimmed{thidx,'spotCount'});
         end
 
-        max_recall = max(resStruct.performance_trimmed{:,'sensitivity'}, [], 'all');
+        max_recall = max(perfStruct.performance_trimmed{:,'sensitivity'}, [], 'all');
         fprintf(outputFile, '%f\t', max_recall);
-        fprintf(outputFile, '%f', resStruct.pr_auc_trimmed);
+        fprintf(outputFile, '%f', perfStruct.pr_auc_trimmed);
         if inclFScore
-            fprintf(outputFile, '\t%f', resStruct.fscore_autoth_trimmed);
+            fprintf(outputFile, '\t%f', perfStruct.fscore_autoth_trimmed);
         end
-    elseif isfield(resStruct, 'performance')
+    elseif isfield(perfStruct, 'performance')
         if inclFScore
-            thidx = RNAUtils.findThresholdIndex(thval, resStruct.performance{:,'thresholdValue'});
-            fprintf(outputFile, '%d\t', resStruct.performance{thidx,'spotCount'});
+            thidx = RNAUtils.findThresholdIndex(thval, perfStruct.performance{:,'thresholdValue'});
+            fprintf(outputFile, '%d\t', perfStruct.performance{thidx,'spotCount'});
         end
 
-        max_recall = max(resStruct.performance{:,'sensitivity'}, [], 'all');
+        max_recall = max(perfStruct.performance{:,'sensitivity'}, [], 'all');
         fprintf(outputFile, '%f\t', max_recall);
-        fprintf(outputFile, '%f', resStruct.pr_auc);
+        fprintf(outputFile, '%f', perfStruct.pr_auc);
         if inclFScore
-            fprintf(outputFile, '\t%f', resStruct.fscore_autoth);
+            fprintf(outputFile, '\t%f', perfStruct.fscore_autoth);
         end
     else
         if inclFScore
@@ -169,9 +158,9 @@ function printGroups(outputFile, analysis)
         end
     elseif startsWith(analysis.imgname, 'mESC4d_')
         if endsWith(analysis.imgname, 'AF594')
-            fprintf(outputFile, 'Tsix_AF594\tmESC4d_Tsix\t');
+            fprintf(outputFile, 'TsixE_AF594\tmESC4d_Tsix\t');
         elseif endsWith(analysis.imgname, 'CY5')
-            fprintf(outputFile, 'Xist_CY5\tXist_Hi\t');
+            fprintf(outputFile, 'XistE_CY5\tXistE_Hi\t');
         end
     elseif startsWith(analysis.imgname, 'scrna_')
         if endsWith(analysis.imgname, 'STL1')
@@ -190,13 +179,13 @@ function printGroups(outputFile, analysis)
         fprintf(outputFile, 'E%dR%d_%02dmin\t', tcnameinfo.Exp, tcnameinfo.Rep, tcnameinfo.TimePointMin);
     elseif startsWith(analysis.imgname, 'mESC_loday')
         if endsWith(analysis.imgname, 'Tsix')
-            fprintf(outputFile, 'Tsix_TMR\tTsix_loday\t');
+            fprintf(outputFile, 'TsixE_TMR\tTsix_loday\t');
         elseif endsWith(analysis.imgname, 'Xist')
-            fprintf(outputFile, 'Xist_CY5\t');
+            fprintf(outputFile, 'XistE_CY5\t');
             if contains(analysis.imgname, 'D1')
-                fprintf(outputFile, 'Xist_Hi\t');
+                fprintf(outputFile, 'XistE_Hi\t');
             else
-                fprintf(outputFile, 'Xist_Lo\t');
+                fprintf(outputFile, 'XistE_Lo\t');
             end
         end
     elseif startsWith(analysis.imgname, 'scprotein_')
@@ -208,13 +197,13 @@ function printGroups(outputFile, analysis)
         end
     elseif startsWith(analysis.imgname, 'histonesc_')
         if endsWith(analysis.imgname, 'Tsix')
-            fprintf(outputFile, 'Tsix_TMR\tTsix_wHist\t');
+            fprintf(outputFile, 'TsixI_TMR\tTsix_wHist\t');
         elseif endsWith(analysis.imgname, 'Xist')
-            fprintf(outputFile, 'Xist_CY5\t');
+            fprintf(outputFile, 'XistI_CY5\t');
             if contains(analysis.imgname, 'D2')
-                fprintf(outputFile, 'Xist_Hi\t');
+                fprintf(outputFile, 'XistI_Hi\t');
             else
-                fprintf(outputFile, 'Xist_Lo\t');
+                fprintf(outputFile, 'XistI_Lo\t');
             end
         elseif endsWith(analysis.imgname, 'Histone')
             fprintf(outputFile, 'Histone_AF488\t');

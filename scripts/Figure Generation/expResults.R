@@ -2,12 +2,13 @@
 library(tidyverse)
 
 #Load raw table
-inputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\expBHStatsDump_230627.tsv"
+#inputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\expBHStatsDump_230627.tsv"
+inputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\expBHStatsDump_231215.tsv"
 expResTable <- read_tsv(inputTablePath)
 
 #Factors
 tool_factor_order <- c("NeuertLab", "Big-FISH", "RS-FISH", "DeepBlink")
-group_factor_order <- c("Xist_CY5", "Tsix_TMR", "CTT1_CY5_Smpl", "STL1_TMR_Smpl", "HeLa_CY5", "HeLa_GFP", "scprotein", "Histone_AF488", "Tsix_AF594", "Preibisch_celegans")
+group_factor_order <- c("XistE_CY5", "XistI_CY5", "TsixE_TMR", "TsixI_TMR", "CTT1_CY5_Smpl", "STL1_TMR_Smpl", "HeLa_CY5", "HeLa_GFP", "scprotein", "Histone_AF488", "TsixE_AF594", "Preibisch_celegans")
 metric_factor_order <- c("MAX_RECALL", "PR_AUC", "F_SCORE")
 
 #Rearrange table to something more plot input friendly
@@ -159,3 +160,176 @@ for (g in 1:group_count) {
 	exp_basic_stats <- rbind(exp_basic_stats, exp_stats_group)
 	rm(exp_stats_group)
 }
+
+# --- Tool count comparisons
+inputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\exp_percell_counts_231205.csv"
+expResTable <- data.frame(read_csv(inputTablePath))
+
+group_name <- "mescHistD2_H3K36me3_AF488"
+group_only <- data.frame(filter(expResTable, GROUP == group_name))
+
+spearman_res <- cor.test(group_only[,"COUNT_BF"], group_only[,"COUNT_HB"], method = "spearman", na.rm = TRUE)
+pearson_res <- cor.test(group_only[,"COUNT_BF"], group_only[,"COUNT_HB"], method = "pearson", na.rm = TRUE)
+
+#Scatterplot
+ggplot(group_only, aes(COUNT_BF, COUNT_HB)) +
+	geom_point(aes(colour = IMGNAME)) + 
+	geom_abline(slope = 1, intercept = 0) + 
+	ggtitle(group_name)
+	
+#Heatmap
+ggplot(group_only, aes(COUNT_BF, COUNT_HB)) +
+	geom_density_2d_filled(bins = 50)
+
+#Remove outliers....
+#Standard box/whiskers method...
+all_counts <- c(group_only$COUNT_HB, group_only$COUNT_BF)
+group_q <- quantile(all_counts, probs=c(0.25, 0.75), na.rm = TRUE)
+iqr <- IQR(all_counts, na.rm = TRUE)
+min_ok <- group_q[1] - (1.5 * iqr)
+max_ok <- group_q[2] + (1.5 * iqr)
+
+
+ggplot(group_only, aes(COUNT_BF, COUNT_HB)) +
+	geom_density_2d_filled(bins = 50) +
+	ylim(0, 2000) +
+	xlim(0, 2000) +
+	theme(legend.position = "none") +
+	ggtitle(group_name)
+	
+ggplot(group_only, aes(COUNT_BF, COUNT_HB)) +
+	geom_density_2d_filled(bins = 50) +
+	theme(legend.position = "none") +
+	ggtitle(group_name)
+	
+#--- sctc correlation plots
+sctc_only <- data.frame(filter(expResTable, startsWith(GROUP, "sctc_")))
+sctc_only <- sctc_only %>%
+	mutate(TIMEPOINT = (as.integer(str_remove((str_split_i(GROUP, "_", 3)), "min"))))
+	
+group_stem <- "sctc_E2R3C2"
+group_only <- data.frame(filter(sctc_only, startsWith(GROUP, group_stem)))
+
+ggplot(group_only, aes(COUNT_BF, COUNT_HB)) +
+	geom_point() + 
+	geom_abline(slope = 1, intercept = 0) + 
+	facet_wrap(vars(TIMEPOINT)) +
+	ggtitle(group_stem)
+
+ggplot(group_only, aes(COUNT_BF, COUNT_HB)) +
+	geom_point() + 
+	ylim(0, 150) +
+	xlim(0, 150) +
+	geom_abline(slope = 1, intercept = 0) + 
+	facet_wrap(vars(TIMEPOINT)) +
+	ggtitle(group_stem)
+
+ggplot(sctc_only, aes(COUNT_BF, COUNT_HB)) +
+	geom_density_2d_filled(bins = 50) +
+	ylim(0, 150) +
+	xlim(0, 150) +
+	theme(legend.position = "none") +
+	facet_wrap(vars(TIMEPOINT)) +
+	ggtitle(group_stem)
+
+#--- Stats table
+all_groups <- unique(expResTable$GROUP)
+group_count <- length(all_groups)
+
+exp_cell_spots_stats <- data.frame(
+	GROUP = all_groups,
+	N = rep(0, group_count),
+	SPEARMAN_EST = rep(NaN, group_count),
+	SPEARMAN_P = rep(NaN, group_count),
+	PEARSON_EST = rep(NaN, group_count),
+	PEARSON_CI95_LO = rep(NaN, group_count),
+	PEARSON_CI95_HI = rep(NaN, group_count),
+	PEARSON_P = rep(NaN, group_count),
+	PERC_25_HB = rep(NaN, group_count),
+	PERC_50_HB = rep(NaN, group_count),
+	PERC_75_HB = rep(NaN, group_count),
+	MEAN_HB = rep(NaN, group_count),
+	STD_HB = rep(NaN, group_count),
+	WHISK_LO_HB = rep(NaN, group_count),
+	WHISK_HI_HB = rep(NaN, group_count),
+	PERC_25_BF = rep(NaN, group_count),
+	PERC_50_BF = rep(NaN, group_count),
+	PERC_75_BF = rep(NaN, group_count),
+	MEAN_BF = rep(NaN, group_count),
+	STD_BF = rep(NaN, group_count),
+	WHISK_LO_BF = rep(NaN, group_count),
+	WHISK_HI_BF = rep(NaN, group_count),
+	PERC_25_DB = rep(NaN, group_count),
+	PERC_50_DB = rep(NaN, group_count),
+	PERC_75_DB = rep(NaN, group_count),
+	MEAN_DB = rep(NaN, group_count),
+	STD_DB = rep(NaN, group_count),
+	WHISK_LO_DB = rep(NaN, group_count),
+	WHISK_HI_DB = rep(NaN, group_count)
+)
+
+for (g in 1:group_count) {
+
+	this_group <- all_groups[g]
+	group_records <- filter(expResTable, GROUP == this_group)
+	exp_cell_spots_stats$N[g] = nrow(group_records)
+
+	#BF-HB correlations
+	spearman_res <- cor.test(group_records$COUNT_BF, group_records$COUNT_HB, method = "spearman", na.rm = TRUE)
+	pearson_res <- cor.test(group_records$COUNT_BF, group_records$COUNT_HB, method = "pearson", na.rm = TRUE)
+	
+	exp_cell_spots_stats$SPEARMAN_EST[g] = spearman_res$estimate[1]
+	exp_cell_spots_stats$SPEARMAN_P[g] = spearman_res$p.value
+	exp_cell_spots_stats$PEARSON_EST[g] = pearson_res$estimate[1]
+	exp_cell_spots_stats$PEARSON_CI95_LO[g] = pearson_res$conf.int[1]
+	exp_cell_spots_stats$PEARSON_CI95_HI[g] = pearson_res$conf.int[2]
+	exp_cell_spots_stats$PEARSON_P[g] = pearson_res$p.value
+	
+	#HB stats
+	gq <- quantile(group_records$COUNT_HB, probs=c(0.25, 0.50, 0.75), na.rm = TRUE)
+	iqr <- IQR(group_records$COUNT_HB, na.rm = TRUE)
+	
+	exp_cell_spots_stats$PERC_25_HB[g] <- gq[1]
+	exp_cell_spots_stats$PERC_50_HB[g] <- gq[2]
+	exp_cell_spots_stats$PERC_75_HB[g] <- gq[3]
+	exp_cell_spots_stats$WHISK_LO_HB[g] <- gq[1] - (1.5 * iqr)
+	exp_cell_spots_stats$WHISK_HI_HB[g] <- gq[3] + (1.5 * iqr)
+	exp_cell_spots_stats$MEAN_HB[g] <- mean(group_records$COUNT_HB, na.rm = TRUE)
+	exp_cell_spots_stats$STD_HB[g] <- sd(group_records$COUNT_HB, na.rm = TRUE)
+	
+	#BF stats
+	gq <- quantile(group_records$COUNT_BF, probs=c(0.25, 0.50, 0.75), na.rm = TRUE)
+	iqr <- IQR(group_records$COUNT_BF, na.rm = TRUE)
+	
+	exp_cell_spots_stats$PERC_25_BF[g] <- gq[1]
+	exp_cell_spots_stats$PERC_50_BF[g] <- gq[2]
+	exp_cell_spots_stats$PERC_75_BF[g] <- gq[3]
+	exp_cell_spots_stats$WHISK_LO_BF[g] <- gq[1] - (1.5 * iqr)
+	exp_cell_spots_stats$WHISK_HI_BF[g] <- gq[3] + (1.5 * iqr)
+	exp_cell_spots_stats$MEAN_BF[g] <- mean(group_records$COUNT_BF, na.rm = TRUE)
+	exp_cell_spots_stats$STD_BF[g] <- sd(group_records$COUNT_BF, na.rm = TRUE)
+	
+	#DB stats
+	gq <- quantile(group_records$COUNT_DB, probs=c(0.25, 0.50, 0.75), na.rm = TRUE)
+	iqr <- IQR(group_records$COUNT_DB, na.rm = TRUE)
+	
+	exp_cell_spots_stats$PERC_25_DB[g] <- gq[1]
+	exp_cell_spots_stats$PERC_50_DB[g] <- gq[2]
+	exp_cell_spots_stats$PERC_75_DB[g] <- gq[3]
+	exp_cell_spots_stats$WHISK_LO_DB[g] <- gq[1] - (1.5 * iqr)
+	exp_cell_spots_stats$WHISK_HI_DB[g] <- gq[3] + (1.5 * iqr)
+	exp_cell_spots_stats$MEAN_DB[g] <- mean(group_records$COUNT_DB, na.rm = TRUE)
+	exp_cell_spots_stats$STD_DB[g] <- sd(group_records$COUNT_DB, na.rm = TRUE)
+
+	rm(this_group)
+	rm(group_records)
+	
+	rm(spearman_res)
+	rm(pearson_res)
+	rm(gq)
+	rm(iqr)
+}
+rm(g)
+
+statsSavePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\exp_percell_counts_stats.tsv"
+write.table(exp_cell_spots_stats, file=statsSavePath, quote=FALSE, sep='\t')

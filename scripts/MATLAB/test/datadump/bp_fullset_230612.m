@@ -18,7 +18,7 @@ scriptCtx = genScriptContextStruct(BaseDir);
 scriptCtx.ImgProcDir = ImgProcDir;
 scriptCtx.ImgDir = ImgDir;
 
-scriptCtx.DateSuffix = '231206';
+scriptCtx.DateSuffix = '231215';
 scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
 
 % ========================== Parameters ==========================
@@ -27,8 +27,8 @@ TablePath_Main = [BaseDir filesep 'test_images.csv'];
 TablePath_Mass = [BaseDir filesep 'test_images_simvarmass.csv'];
 TablePath_YTC = [BaseDir filesep 'test_images_simytc.csv'];
 
-%AllTablePaths = {TablePath_Main, TablePath_Mass, TablePath_YTC};
-AllTablePaths = {TablePath_Mass, TablePath_YTC};
+AllTablePaths = {TablePath_Main, TablePath_Mass, TablePath_YTC};
+%AllTablePaths = {TablePath_Mass, TablePath_YTC};
 ImgTableCount = size(AllTablePaths, 2);
 
 % ========================== Main Loop ==========================
@@ -76,8 +76,8 @@ function ctx = initialize(ctx)
     %ctx = openThOutput(ctx);
 
     %ctx = open_sctcOutput(ctx);
-    %ctx = openExpDumpOutput(ctx);
-    ctx = openCountDumpOutput(ctx);
+    ctx = openExpDumpOutput(ctx);
+    %ctx = openCountDumpOutput(ctx);
 
     %ctx = open_sctcSimCountOutput(ctx);
 
@@ -99,9 +99,14 @@ function doTheThing(ctx, analysis)
     %Dump_ThreshTable(ctx.OutputHandle, analysis);
 
     %do_sctcIndiv(ctx, analysis);
-    %Dump_expResultStats(ctx.OutputHandle, analysis);
+    Dump_expResultStats(ctx.OutputHandle, analysis, 'BH');
 
-    dumpCountsIndiv(ctx, analysis);
+    %dumpCountsIndiv(ctx, analysis);
+
+    %analysis = AnalysisFiles.fixExpRefsetOrganization(analysis);
+    %fprintf('hold\n');
+    %[analysis, ~] = AnalysisFiles.activateExpRefSet(analysis, 'BH');
+    %save(ctx.ResultsPath, 'analysis');
 
     %Dump_JustCoords_231128(analysis, [ctx.coords_dir filesep analysis.imgname '_calls.mat']);
 
@@ -116,6 +121,9 @@ function bool_res = shouldSkip(imgName)
     %TODO fill in action here.
     bool_res = false;
     %bool_res = skip_sctc(imgName);
+
+    if startsWith(imgName, 'sim'); bool_res = true; end
+    if startsWith(imgName, 'rsfish_sim'); bool_res = true; end
 end
 
 function ctx = genScriptContextStruct(basedir)

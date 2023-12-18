@@ -8,20 +8,10 @@ try
     
     if isempty(callset); return; end
     
-    if isfield(rstruct, 'performance')
-        all_th = rstruct.performance{:, 'thresholdValue'}';
-    else
-        all_th = unique(callset{:, 'dropout_thresh'})';
-        all_th = all_th(find(all_th > 0));
-    end
-    
-    T = size(all_th, 2);
-    spot_table = zeros(T, 2);
-    spot_table(1:T, 1) = 1:T;
-    
-    for t = 1:T
-        spot_table(t, 2) = nnz(callset{:, 'dropout_thresh'} >= all_th(t));
-    end
+    spot_table = AnalysisFiles.callset2SpotcountTable(callset);
+    all_th = spot_table(:,1)';
+    T = size(spot_table,1);
+    spot_table(1:T,1) = 1:T;
     
     threshold_results = RNAThreshold.runDefaultParameters(spot_table, []);
     if ~isempty(threshold_results)
