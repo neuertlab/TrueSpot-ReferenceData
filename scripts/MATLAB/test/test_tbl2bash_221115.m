@@ -16,9 +16,9 @@ ClusterPyenvDir = '/home/hospelb/pyvenv';
 
 % ========================== Constants ==========================
 
-DETECT_THREADS = 8;
-RAM_PER_CORE = 8;
-RAM_PER_CORE_BF = 64;
+DETECT_THREADS = 4;
+RAM_PER_CORE = 4;
+RAM_PER_CORE_BF = 16;
 HB_PARALLEL_HR = 6;
 HB_SERIAL_HR = 10;
 BF_SERIAL_HR = 14;
@@ -35,13 +35,14 @@ TH_MAX = 0;
 TH_MIN_BF = 10;
 Z_TRIM = 0;
 BF_SOBJSZ = 10;
-BF_NUCSZ = 256; %200 yeast, 256 mesc
+BF_NUCSZ = 256;
 %BF_RESCALE = false;
+GAUSS_RAD = 3;
 
-RUN_HB = false;
+RUN_HB = true;
 RUN_BFNR = false;
-RUN_BFRS = false;
-RUN_QUANT = true;
+RUN_BFRS = true;
+RUN_QUANT = false;
 OVERWRITE = false;
 
 MODULE_NAME = 'MATLAB/2018b';
@@ -49,13 +50,14 @@ MATLAB_DIR = [ClusterWorkDir '/matlab'];
 PYVENV_NAME = 'bigfish';
 
 % ========================== Load csv Table ==========================
+%InputTablePath = [DataDir filesep 'test_images_simneg.csv'];
 %InputTablePath = [DataDir filesep 'test_images_simytc.csv'];
 %InputTablePath = [DataDir filesep 'test_images_simvarmass.csv'];
 InputTablePath = [DataDir filesep 'test_images.csv'];
 image_table = testutil_opentable(InputTablePath);
 
 %ImageName='scrna_E2R2I5_CTT1';
-GroupPrefix = 'sctc_E2R1_';
+GroupPrefix = 'simerly_';
 GroupSuffix = [];
 % ========================== Find Record ==========================
 addpath('./core');
@@ -111,7 +113,7 @@ for r = 1:rec_count
         printMatArg(script_hb, 'imgname', iname, false);
         if endsWith(ipath, '.mat')
             printMatArg(script_hb, 'matimg', [ClusterWorkDir ipath], true);
-        elseif endsWith(ipath, '.tif')
+        elseif (endsWith(ipath, '.tif') | endsWith(ipath, '.tiff'))
             printMatArg(script_hb, 'tif', [ClusterWorkDir ipath], true);
         end
 
@@ -161,6 +163,7 @@ for r = 1:rec_count
         printMatArg(script_hb, 'targettype', getTableValue(image_table, r, 'TARGET_TYPE'), true);
         printMatArg(script_hb, 'species', getTableValue(image_table, r, 'SPECIES'), true);
         printMatArg(script_hb, 'celltype', getTableValue(image_table, r, 'CELLTYPE'), true);
+        printMatArg(script_hb, 'gaussrad', num2str(GAUSS_RAD), true);
 
         if DETECT_THREADS > 1
             printMatArg(script_hb, 'threads', num2str(DETECT_THREADS), true);

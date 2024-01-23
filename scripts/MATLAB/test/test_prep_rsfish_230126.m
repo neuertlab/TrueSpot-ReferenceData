@@ -26,9 +26,9 @@ MATLAB_DIR = [ClusterWorkDir '/matlab'];
 % ========================== Constants ==========================
 addpath('./core');
 
-DETECT_THREADS = 8;
+DETECT_THREADS = 4;
 RAM_PER_CORE = 8;
-HRS_PER_IMAGE = 12;
+HRS_PER_IMAGE = 8;
 
 OVERWRITE = false;
 
@@ -48,17 +48,18 @@ START_I = 1; %Override
 DO_IMG_SPLIT = false;
 
 % ========================== Load csv Table ==========================
+%InputTablePath = [DataDir filesep 'test_images_simneg.csv'];
 %InputTablePath = [DataDir filesep 'test_images_simytc.csv'];
 %InputTablePath = [DataDir filesep 'test_images_simvarmass.csv'];
 InputTablePath = [DataDir filesep 'test_images.csv'];
 image_table = testutil_opentable(InputTablePath);
 
-RSDirTail = '/yeast_tc/E2R2/CH1';
+RSDirTail = '/simerly_lab';
 NewTifDir = ['/img' RSDirTail];
 
 %ImageName='scrna_E2R2I5_CTT1';
-GroupPrefix = 'sctc_E2R2_';
-GroupSuffix = 'STL1';
+GroupPrefix = 'simerly_';
+GroupSuffix = []';
 
 % ========================== Do things ==========================
 

@@ -27,7 +27,7 @@ MATLAB_DIR = [ClusterWorkDir '/matlab'];
 % ========================== Constants ==========================
 
 DETECT_THREADS = 4;
-RAM_PER_CORE = 16;
+RAM_PER_CORE = 8;
 HRS_PER_IMAGE = 4;
 
 MIN_PROB = 0.01;
@@ -35,21 +35,21 @@ MIN_PROB = 0.01;
 DO_IMG_SPLIT = false;
 OVERWRITE = false;
 
-OutDirTail = '/simneg';
+OutDirTail = '/simerly_lab';
 %ModelName = 'SimRandoModel';
 ModelName = 'smfish';
 
 NewTifDir = ['/img' OutDirTail];
 
 % ========================== Load csv Table ==========================
-InputTablePath = [DataDir filesep 'test_images_simneg.csv'];
+%InputTablePath = [DataDir filesep 'test_images_simneg.csv'];
 %InputTablePath = [DataDir filesep 'test_images_simytc.csv'];
 %InputTablePath = [DataDir filesep 'test_images_simvarmass.csv'];
-%InputTablePath = [DataDir filesep 'test_images.csv'];
+InputTablePath = [DataDir filesep 'test_images.csv'];
 image_table = testutil_opentable(InputTablePath);
 
 %ImageName='scrna_E2R2I5_CTT1';
-GroupPrefix = 'simneg_';
+GroupPrefix = 'simerly_';
 GroupSuffix = [];
 
 % ========================== Do things ==========================

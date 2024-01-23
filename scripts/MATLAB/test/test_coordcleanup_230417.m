@@ -15,13 +15,13 @@ addpath('./test/datadump');
 
 % ========================== Constants ==========================
 
-START_INDEX = 75;
-END_INDEX = 272;
+START_INDEX = 1;
+END_INDEX = 500;
 
-%INCL_LIST = [];
-INCL_LIST = [76 80 88 90 93 98 104 105 108 112 121 ...
-    124 128 129 135 178 179 187 188 209 210 211 230 ...
-    246 247 248 250 251 252 256 259 261 263 267 272];
+INCL_LIST = [];
+% INCL_LIST = [76 80 88 90 93 98 104 105 108 112 121 ...
+%     124 128 129 135 178 179 187 188 209 210 211 230 ...
+%     246 247 248 250 251 252 256 259 261 263 267 272];
 
 DO_HOMEBREW = true;
 DO_BIGFISH = true;
@@ -33,23 +33,24 @@ NEW_TS_ONLY = false;
 
 XTRIM = 7;
 YTRIM = 7;
-OLD_SPOTSRUN_DEF = true;
+OLD_SPOTSRUN_DEF = false;
 
 OutputDir = [BaseDir filesep 'data' filesep 'results'];
 
 DEADPIX_WORKDIR = './bgh_old';
 
 RS_TH_IVAL = 0.1/250;
-SCRIPT_VER = 'v23.11.15.00';
+SCRIPT_VER = 'v24.01.23.00';
 COMPUTER_NAME = 'VU_NEUERTLAB_HOSPELB';
 
 EXPTS_INITIALS = 'BH';
 
 % ========================== Load csv Table ==========================
 
+InputTablePath = [BaseDir filesep 'test_images_simneg.csv'];
 %InputTablePath = [BaseDir filesep 'test_images_simytc.csv'];
 %InputTablePath = [BaseDir filesep 'test_images_simvarmass.csv'];
-InputTablePath = [BaseDir filesep 'test_images.csv'];
+%InputTablePath = [BaseDir filesep 'test_images.csv'];
 image_table = testutil_opentable(InputTablePath);
 
 % ========================== Iterate through table entries ==========================
@@ -96,7 +97,7 @@ for r = START_INDEX:END_INDEX
     ts_region = [];
     ref_coords = [];
     ref_coords = loadSimTruthset(image_table, r, ImgDir);
-    if isempty(ref_coords)
+    if isempty(ref_coords) & ~startsWith(myname, 'simneg_')
         [ref_coords, ts_region] = loadExpTruthset(image_table, r, BaseDir);
     end
 
@@ -107,6 +108,8 @@ for r = START_INDEX:END_INDEX
     if startsWith(myname, 'sim_') | startsWith(myname, 'simvar')
         is_sim = true;
     elseif startsWith(myname, 'rsfish_sim')
+        is_sim = true;
+    elseif startsWith(myname, 'simneg_')
         is_sim = true;
     end
 
@@ -337,6 +340,13 @@ for r = START_INDEX:END_INDEX
                 end
 
             end
+
+            if startsWith(myname, 'simneg_')
+                %No truthset. Everything is a false positive.
+                call_table{:,'in_truth_region'} = true;
+                call_table{:,'is_trimmed_out'} = false;
+                call_table{:,'is_true'} = false;
+            end
             
             %TODO Fit matching, if applicable
 
@@ -394,6 +404,8 @@ for r = START_INDEX:END_INDEX
                 %Calculate performance metrics
                 analysis.results_hb = runstats(analysis.results_hb, spot_table, spotsrun.intensity_threshold);
                 analysis.results_hb.ref_call_map = ref_call_map;
+            elseif startsWith(myname, 'simneg_')
+                analysis.results_hb = runstats(analysis.results_hb, spot_table, spotsrun.intensity_threshold);
             end
 
             if ~is_sim & ~isempty(ref_coords) & ~isempty(EXPTS_INITIALS)
@@ -482,6 +494,13 @@ for r = START_INDEX:END_INDEX
                 end
             end
 
+            if startsWith(myname, 'simneg_')
+                %No truthset. Everything is a false positive.
+                call_table{:,'in_truth_region'} = true;
+                call_table{:,'is_trimmed_out'} = false;
+                call_table{:,'is_true'} = false;
+            end
+
             %Fit matching
             fit_table_path = [bf_dir filesep 'fitspots.csv'];
             if ~NEW_TS_ONLY
@@ -532,6 +551,8 @@ for r = START_INDEX:END_INDEX
                 %Calculate performance metrics
                 analysis.results_bf = runstats(analysis.results_bf, spot_table, bfthresh);
                 analysis.results_bf.ref_call_map = ref_call_map;
+            elseif startsWith(myname, 'simneg_')
+                analysis.results_bf = runstats(analysis.results_bf, spot_table, bfthresh);
             end
             if ~is_sim & ~isempty(ref_coords) & ~isempty(EXPTS_INITIALS)
                 analysis.results_bf = markTSStats(analysis.results_bf, EXPTS_INITIALS);
@@ -618,6 +639,13 @@ for r = START_INDEX:END_INDEX
                     end
                 end
 
+                if startsWith(myname, 'simneg_')
+                    %No truthset. Everything is a false positive.
+                    call_table{:,'in_truth_region'} = true;
+                    call_table{:,'is_trimmed_out'} = false;
+                    call_table{:,'is_true'} = false;
+                end
+
                 if ~isempty(cellmask)
                     call_table = RNACoords.applyCellSegMask(call_table, cellmask);
                 end
@@ -639,6 +667,8 @@ for r = START_INDEX:END_INDEX
                     %Calculate performance metrics
                     analysis.results_rs = runstats(analysis.results_rs, spot_table, 0);
                     analysis.results_rs.ref_call_map = ref_call_map;
+                elseif startsWith(myname, 'simneg_')
+                    analysis.results_rs = runstats(analysis.results_rs, spot_table, 0);
                 end
 
                 %If experimental TS, mark ts fields
@@ -738,6 +768,13 @@ for r = START_INDEX:END_INDEX
                     end
                 end
 
+                if startsWith(myname, 'simneg_')
+                    %No truthset. Everything is a false positive.
+                    call_table{:,'in_truth_region'} = true;
+                    call_table{:,'is_trimmed_out'} = false;
+                    call_table{:,'is_true'} = false;
+                end
+
                 %Save
                 if ~isfield(analysis, 'results_db')
                     analysis.results_db = struct('callset', table.empty());
@@ -758,6 +795,8 @@ for r = START_INDEX:END_INDEX
                     %Calculate performance metrics
                     analysis.results_db = runstats(analysis.results_db, spot_table, 0);
                     analysis.results_db.ref_call_map = ref_call_map;
+                elseif startsWith(myname, 'simneg_')
+                    analysis.results_db = runstats(analysis.results_db, spot_table, 0);
                 end
 
                 clear call_table call_table_raw callmap ref_call_map
@@ -830,6 +869,8 @@ function outdir = getRSDBGroupOutputDir(imgname)
         outdir = [filesep 'rsfish' filesep];
     elseif startsWith(imgname, 'simvar_')
         outdir = [filesep 'simvar' filesep];
+    elseif startsWith(imgname, 'simneg_')
+        outdir = [filesep 'simneg' filesep];
     elseif startsWith(imgname, 'simvarmass_')
         if contains(imgname, 'TMRL') | contains(imgname, 'CY5L')
             outdir = [filesep 'simytc' filesep];
