@@ -15,8 +15,8 @@ addpath('./test/datadump');
 
 % ========================== Constants ==========================
 
-START_INDEX = 1;
-END_INDEX = 500;
+START_INDEX = 1164;
+END_INDEX = 1316;
 
 INCL_LIST = [];
 % INCL_LIST = [76 80 88 90 93 98 104 105 108 112 121 ...
@@ -31,26 +31,36 @@ DO_DEEPBLINK = true;
 DO_TRUTHSET = true;
 NEW_TS_ONLY = false;
 
-XTRIM = 7;
-YTRIM = 7;
+XTRIM = 4;
+YTRIM = 4;
 OLD_SPOTSRUN_DEF = false;
+
+SNAPRAD_3 = 3;
+SNAPRAD_Z = 2;
 
 OutputDir = [BaseDir filesep 'data' filesep 'results'];
 
 DEADPIX_WORKDIR = './bgh_old';
 
 RS_TH_IVAL = 0.1/250;
-SCRIPT_VER = 'v24.01.23.00';
+SCRIPT_VER = 'v24.02.02.02';
 COMPUTER_NAME = 'VU_NEUERTLAB_HOSPELB';
 
-EXPTS_INITIALS = 'BH';
+EXPTS_INITIALS = 'BHImaris';
+
+% ========================== Import timestamp (for noting settings) ==========================
+
+SCRIPT_TIMESTAMP = datetime;
+TIMESTAMP_STR = sprintf('%04d%02d%02d%02d%02d%02d', SCRIPT_TIMESTAMP.Year, ...
+    SCRIPT_TIMESTAMP.Month, SCRIPT_TIMESTAMP.Day,...
+    SCRIPT_TIMESTAMP.Hour, SCRIPT_TIMESTAMP.Minute, round(SCRIPT_TIMESTAMP.Second));
 
 % ========================== Load csv Table ==========================
 
-InputTablePath = [BaseDir filesep 'test_images_simneg.csv'];
+%InputTablePath = [BaseDir filesep 'test_images_simneg.csv'];
 %InputTablePath = [BaseDir filesep 'test_images_simytc.csv'];
 %InputTablePath = [BaseDir filesep 'test_images_simvarmass.csv'];
-%InputTablePath = [BaseDir filesep 'test_images.csv'];
+InputTablePath = [BaseDir filesep 'test_images.csv'];
 image_table = testutil_opentable(InputTablePath);
 
 % ========================== Iterate through table entries ==========================
@@ -91,14 +101,68 @@ for r = START_INDEX:END_INDEX
     else
         analysis = struct('imgname', myname);
     end
-    analysis.script_version = SCRIPT_VER;
+
+    if ~isfield(analysis, 'import_settings')
+        analysis.import_settings = struct();
+    end
+    import_settings = struct();
+    import_settings.script_timestamp = SCRIPT_TIMESTAMP;
+    import_settings.script_version = SCRIPT_VER;
+    import_settings.snaprad_3 = SNAPRAD_3;
+    import_settings.snaprad_z = SNAPRAD_Z;
+    import_settings.xtrim = XTRIM;
+    import_settings.ytrim = YTRIM;
+    import_settings.rs_thresh_interval = RS_TH_IVAL;
+    import_settings.computer = COMPUTER_NAME;
+    import_settings.do_hb = DO_HOMEBREW;
+    import_settings.do_bf = DO_BIGFISH;
+    import_settings.do_rs = DO_RSFISH;
+    import_settings.do_db = DO_DEEPBLINK;
+    import_settings.do_refset = DO_TRUTHSET;
+    import_settings.new_refset_only = NEW_TS_ONLY;
+    if DO_TRUTHSET
+        import_settings.exp_ts_name = EXPTS_INITIALS;
+    end
+    if DO_HOMEBREW
+        import_settings.old_hb_spotsrun_fmt = OLD_SPOTSRUN_DEF;
+    end
+    import_settings.table_path = InputTablePath;
+    import_settings.start_row = START_INDEX;
+    import_settings.end_row = END_INDEX;
+    if ~isempty(INCL_LIST)
+        import_settings.include_list = INCL_LIST;
+    end
+
+    isettingsfieldname = ['run_' TIMESTAMP_STR];
+    analysis.import_settings.(isettingsfieldname) = import_settings;
+    clear import_settings isettingsfieldname
+
+    %Load original image.
+    if endsWith(srcpath, '.mat')
+        [idir, ifname, ~] = fileparts(srcpath);
+        srcpath = [idir filesep 'tif' filesep ifname '.tif'];
+    end
+    chcount = getTableValue(image_table, r, 'CH_TOTAL');
+    trgch = getTableValue(image_table, r, 'CHANNEL');
+    [channels, ~] = LoadTif(srcpath, chcount, [trgch], 1);
+    my_image = channels{trgch,1};
+    my_image = uint16(my_image);
+    clear channels;
+    X = size(my_image,2);
+    Y = size(my_image,1);
+    Z = size(my_image,3);
+    analysis.image_dims = struct('x', X, 'y', Y, 'z', Z);
 
     %Find truthset...
     ts_region = [];
     ref_coords = [];
     ref_coords = loadSimTruthset(image_table, r, ImgDir);
     if isempty(ref_coords) & ~startsWith(myname, 'simneg_')
-        [ref_coords, ts_region] = loadExpTruthset(image_table, r, BaseDir);
+        if startsWith(myname, 'simerly_')
+            ref_coords = loadSimerlyLabRefSet(image_table, r, ImgDir, analysis.image_dims);
+        else
+            [ref_coords, ts_region] = loadExpTruthset(image_table, r, BaseDir);
+        end
     end
 
     if ~isempty(ts_region)
@@ -163,23 +227,8 @@ for r = START_INDEX:END_INDEX
         end
     end
 
-    %Load original image.
-    if endsWith(srcpath, '.mat')
-        [idir, ifname, ~] = fileparts(srcpath);
-        srcpath = [idir filesep 'tif' filesep ifname '.tif'];
-    end
-    chcount = getTableValue(image_table, r, 'CH_TOTAL');
-    trgch = getTableValue(image_table, r, 'CHANNEL');
-    [channels, ~] = LoadTif(srcpath, chcount, [trgch], 1);
-    my_image = channels{trgch,1};
-    my_image = uint16(my_image);
-    clear channels;
-    X = size(my_image,2);
-    Y = size(my_image,1);
-    Z = size(my_image,3);
-
+   
     %Some metadata
-    analysis.image_dims = struct('x', X, 'y', Y, 'z', Z);
     px = getTableValue(image_table, r, 'VOXEL_X');
     py = getTableValue(image_table, r, 'VOXEL_Y');
     pz = getTableValue(image_table, r, 'VOXEL_Z');
@@ -275,6 +324,7 @@ for r = START_INDEX:END_INDEX
                     call_table = RNACoords.convertOldCoordTable(spot_table, coord_table, IMG_filtered, my_image, 2);
                 else
                     [~, call_table] = spotsrun.loadCallTable();
+                    call_table = RNACoords.extendHBOutputCallTable(call_table);
                 end
             end
             init_call_count = size(call_table,1);
@@ -288,7 +338,7 @@ for r = START_INDEX:END_INDEX
                         snapminth = spotsrun.intensity_threshold;
                     end
                 end
-                [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, 4, 2, 1);
+                [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, SNAPRAD_3, SNAPRAD_Z, 1);
                 full_call_count = size(call_table, 1);
 
                 %if fnegs were added, get the intensity values for those
@@ -449,7 +499,7 @@ for r = START_INDEX:END_INDEX
                         snapminth = bfthresh;
                     end
                 end
-                [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, 4, 2, 1);
+                [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, SNAPRAD_3, SNAPRAD_Z, 1);
                 full_call_count = size(call_table, 1);
 
                 if full_call_count > init_call_count
@@ -597,7 +647,7 @@ for r = START_INDEX:END_INDEX
                 end
                 
                 if ~isempty(ref_coords)
-                    [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, 4, 2, RS_TH_IVAL);
+                    [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, SNAPRAD_3, SNAPRAD_Z, RS_TH_IVAL);
                     full_call_count = size(call_table, 1);
 
                     if full_call_count > init_call_count
@@ -725,7 +775,7 @@ for r = START_INDEX:END_INDEX
                 init_call_count = size(call_table,1);
 
                 if ~isempty(ref_coords)
-                    [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, 4, 2, 0.001);
+                    [call_table, ref_call_map] = RNACoords.updateTFCalls(call_table, ref_coords, SNAPRAD_3, SNAPRAD_Z, 0.001);
                     full_call_count = size(call_table, 1);
 
                     if full_call_count > init_call_count
@@ -871,7 +921,9 @@ function outdir = getRSDBGroupOutputDir(imgname)
         outdir = [filesep 'simvar' filesep];
     elseif startsWith(imgname, 'simneg_')
         outdir = [filesep 'simneg' filesep];
-    elseif startsWith(imgname, 'simvarmass_')
+    elseif startsWith(imgname, 'simerly_')
+        outdir = [filesep 'simneg' filesep];
+    elseif startsWith(imgname, 'simerly_lab')
         if contains(imgname, 'TMRL') | contains(imgname, 'CY5L')
             outdir = [filesep 'simytc' filesep];
         else
@@ -892,6 +944,8 @@ function dirname = getSetOutputDirName(imgname)
         else
             dirname = groupname;
         end
+    elseif strcmp(groupname, 'simerly')
+        dirname = 'simerly_lab';
     else
         if startsWith(groupname, 'ROI')
             dirname = 'munsky_lab';
@@ -993,6 +1047,54 @@ function ref_coords = loadSimTruthset(image_table, row_index, ImgDir)
     elseif startsWith(myname, 'rsfish_sim')
         ref_coords = loadSimTruthsetRS(image_table, row_index, ImgDir);
     end
+end
+
+function ref_coords = loadSimerlyLabRefSet(image_table, row_index, ImgDir, image_dims)
+    myname = getTableValue(image_table, row_index, 'IMGNAME');
+    srcpath_raw = getTableValue(image_table, row_index, 'IMAGEPATH');
+    srcpath = [ImgDir replace(srcpath_raw, '/', filesep)];
+
+    tabledir = [ImgDir filesep 'img' filesep 'simerly_lab' filesep 'ImarisSets'];
+    [~,tifname,~] = fileparts(srcpath);
+    tifnameparts = split(tifname, '-');
+    tifname = tifnameparts{1,1};
+    ref_coords = [];
+
+    %Check for directory
+    tabledir = [tabledir filesep tifname '_Statistics'];
+    if isfolder(tabledir)
+        probename = getTableValue(image_table, row_index, 'PROBE');
+        tabledir = [tabledir filesep probename];
+        if isfolder(tabledir)
+            tablepath = [tabledir filesep tifname '_Position.csv'];
+            if isfile(tablepath)
+                fprintf('\t> Imaris set for %s (%s) found!\n', myname, tifname);
+
+                %Need voxel dims to convert to pix from um
+                px = double(getTableValue(image_table, row_index, 'VOXEL_X'));
+                py = double(getTableValue(image_table, row_index, 'VOXEL_Y'));
+                pz = double(getTableValue(image_table, row_index, 'VOXEL_Z'));
+
+                rawtable = readtable(tablepath);
+                spotcount = size(rawtable, 1);
+                ref_coords = NaN(spotcount, 3);
+
+                %Convert to nm, then to pixels
+                ref_coords(:,1) = (rawtable{:,'PositionX'} .* 1000.0) ./ px;
+                ref_coords(:,2) = (rawtable{:,'PositionY'} .* 1000.0) ./ py;
+                ref_coords(:,3) = (rawtable{:,'PositionZ'} .* 1000.0) ./ pz;
+
+                %Shift to 1-based coords and clamp
+                ref_coords = ref_coords + 0.5;
+                ref_coords = max(ref_coords, 1);
+
+                ref_coords(:,1) = min(ref_coords(:,1), image_dims.x);
+                ref_coords(:,2) = min(ref_coords(:,2), image_dims.y);
+                ref_coords(:,3) = min(ref_coords(:,3), image_dims.z);
+            end
+        end
+    end
+ 
 end
 
 function [ref_coords, valid_range] = loadExpTruthset(image_table, row_index, BaseDir)
