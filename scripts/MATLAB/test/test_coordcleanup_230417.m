@@ -16,7 +16,7 @@ addpath('./test/datadump');
 % ========================== Constants ==========================
 
 START_INDEX = 1164;
-END_INDEX = 1316;
+END_INDEX = 1233;
 
 INCL_LIST = [];
 % INCL_LIST = [76 80 88 90 93 98 104 105 108 112 121 ...
@@ -43,7 +43,7 @@ OutputDir = [BaseDir filesep 'data' filesep 'results'];
 DEADPIX_WORKDIR = './bgh_old';
 
 RS_TH_IVAL = 0.1/250;
-SCRIPT_VER = 'v24.02.02.02';
+SCRIPT_VER = 'v24.02.02.03';
 COMPUTER_NAME = 'VU_NEUERTLAB_HOSPELB';
 
 EXPTS_INITIALS = 'BHImaris';
@@ -922,8 +922,8 @@ function outdir = getRSDBGroupOutputDir(imgname)
     elseif startsWith(imgname, 'simneg_')
         outdir = [filesep 'simneg' filesep];
     elseif startsWith(imgname, 'simerly_')
-        outdir = [filesep 'simneg' filesep];
-    elseif startsWith(imgname, 'simerly_lab')
+        outdir = [filesep 'simerly_lab' filesep];
+    elseif startsWith(imgname, 'simvarmass_')
         if contains(imgname, 'TMRL') | contains(imgname, 'CY5L')
             outdir = [filesep 'simytc' filesep];
         else
