@@ -23,9 +23,9 @@ function Dump_ThreshTable(outputFile, analysis)
         end
     elseif startsWith(analysis.imgname, 'mESC4d_')
         if endsWith(analysis.imgname, 'AF594')
-            fprintf(outputFile, 'Tsix_AF594\tmESC4d_Tsix\t');
+            fprintf(outputFile, 'TsixE_AF594\tmESC4d_Tsix\t');
         elseif endsWith(analysis.imgname, 'CY5')
-            fprintf(outputFile, 'Xist_CY5\tXist_Hi\t');
+            fprintf(outputFile, 'XistE_CY5\tXistE_Hi\t');
         end
     elseif startsWith(analysis.imgname, 'scrna_')
         if endsWith(analysis.imgname, 'STL1')
@@ -44,13 +44,13 @@ function Dump_ThreshTable(outputFile, analysis)
         fprintf(outputFile, 'E%dR%d_%02dmin\t', tcnameinfo.Exp, tcnameinfo.Rep, tcnameinfo.TimePointMin);
     elseif startsWith(analysis.imgname, 'mESC_loday')
         if endsWith(analysis.imgname, 'Tsix')
-            fprintf(outputFile, 'Tsix_TMR\tTsix_loday\t');
+            fprintf(outputFile, 'TsixE_TMR\tTsixE_loday\t');
         elseif endsWith(analysis.imgname, 'Xist')
-            fprintf(outputFile, 'Xist_CY5\t');
+            fprintf(outputFile, 'XistE_CY5\t');
             if contains(analysis.imgname, 'D1')
-                fprintf(outputFile, 'Xist_Hi\t');
+                fprintf(outputFile, 'XistE_Hi\t');
             else
-                fprintf(outputFile, 'Xist_Lo\t');
+                fprintf(outputFile, 'XistE_Lo\t');
             end
         end
     elseif startsWith(analysis.imgname, 'scprotein_')
@@ -62,13 +62,13 @@ function Dump_ThreshTable(outputFile, analysis)
         end
     elseif startsWith(analysis.imgname, 'histonesc_')
         if endsWith(analysis.imgname, 'Tsix')
-            fprintf(outputFile, 'Tsix_TMR\tTsix_wHist\t');
+            fprintf(outputFile, 'TsixI_TMR\tTsixI_wHist\t');
         elseif endsWith(analysis.imgname, 'Xist')
-            fprintf(outputFile, 'Xist_CY5\t');
+            fprintf(outputFile, 'XistI_CY5\t');
             if contains(analysis.imgname, 'D2')
-                fprintf(outputFile, 'Xist_Hi\t');
+                fprintf(outputFile, 'XistI_Hi\t');
             else
-                fprintf(outputFile, 'Xist_Lo\t');
+                fprintf(outputFile, 'XistI_Lo\t');
             end
         elseif endsWith(analysis.imgname, 'Histone')
             fprintf(outputFile, 'Histone_AF488\t');
@@ -98,6 +98,23 @@ function Dump_ThreshTable(outputFile, analysis)
         else
             fprintf(outputFile, 'Preibisch_celegans\tPreibisch_celegans\t');
         end
+    elseif startsWith(analysis.imgname, 'simerly_')
+        ptarg = analysis.probe_target;
+        flurophore = analysis.probe;
+        if contains(analysis.imgname, '_40x_')
+            gname = ['simerly_40x_' ptarg '_' flurophore];
+            fprintf(outputFile, '%s\t%s\t', gname, gname);
+        elseif contains(analysis.imgname, '_HiBkg_')
+            if contains(analysis.cell_type, 'Hypothalamus')
+                gname = ['simerly_HiBkg_ARH_' ptarg '_' flurophore];
+            else
+                gname = ['simerly_HiBkg_BST_' ptarg '_' flurophore];
+            end
+            fprintf(outputFile, '%s\t%s\t', gname, gname);
+        elseif contains(analysis.imgname, '_LoBkg_')
+            gname = ['simerly_LoBkg_' ptarg '_' flurophore];
+            fprintf(outputFile, '%s\t%s\t', gname, gname);
+        end
     end
 
     %Print HB results
@@ -109,14 +126,9 @@ function Dump_ThreshTable(outputFile, analysis)
             fprintf(outputFile, 'NaN\t');
         end
 
-        if thval > 0 & isfield(analysis.results_hb, 'performance')
-            thidx = RNAUtils.findThresholdIndex(thval, analysis.results_hb.performance{:, 'thresholdValue'}.');
-            if thidx > 0
-                sc = analysis.results_hb.performance{thidx, 'spotCount'};
-                fprintf(outputFile, '%d\t', sc);
-            else
-                fprintf(outputFile, 'NaN\t');
-            end
+        if thval > 0
+            sc = nnz(analysis.results_hb.callset{:, 'dropout_thresh'} >= thval);
+            fprintf(outputFile, '%d\t', sc);
         else
             fprintf(outputFile, 'NaN\t');
         end
@@ -140,14 +152,9 @@ function Dump_ThreshTable(outputFile, analysis)
                 fprintf(outputFile, 'NaN\t');
             end
 
-            if thval > 0 & isfield(analysis.results_bf, 'performance')
-                thidx = RNAUtils.findThresholdIndex(thval, analysis.results_bf.performance{:, 'thresholdValue'}.');
-                if thidx > 0
-                    sc = analysis.results_bf.performance{thidx, 'spotCount'};
-                    fprintf(outputFile, '%d\t', sc);
-                else
-                    fprintf(outputFile, 'NaN\t');
-                end
+            if thval > 0
+                sc = nnz(analysis.results_bf.callset{:, 'dropout_thresh'} >= thval);
+                fprintf(outputFile, '%d\t', sc);
             else
                 fprintf(outputFile, 'NaN\t');
             end

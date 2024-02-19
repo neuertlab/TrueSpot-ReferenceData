@@ -18,7 +18,7 @@ scriptCtx = genScriptContextStruct(BaseDir);
 scriptCtx.ImgProcDir = ImgProcDir;
 scriptCtx.ImgDir = ImgDir;
 
-scriptCtx.DateSuffix = '231215';
+scriptCtx.DateSuffix = '240214';
 scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
 
 % ========================== Parameters ==========================
@@ -26,8 +26,9 @@ scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
 TablePath_Main = [BaseDir filesep 'test_images.csv'];
 TablePath_Mass = [BaseDir filesep 'test_images_simvarmass.csv'];
 TablePath_YTC = [BaseDir filesep 'test_images_simytc.csv'];
+TablePath_SimNeg = [BaseDir filesep 'test_images_simneg.csv'];
 
-AllTablePaths = {TablePath_Main, TablePath_Mass, TablePath_YTC};
+AllTablePaths = {TablePath_Main, TablePath_Mass, TablePath_YTC TablePath_SimNeg};
 %AllTablePaths = {TablePath_Mass, TablePath_YTC};
 ImgTableCount = size(AllTablePaths, 2);
 
@@ -76,7 +77,7 @@ function ctx = initialize(ctx)
     %ctx = openThOutput(ctx);
 
     %ctx = open_sctcOutput(ctx);
-    ctx = openExpDumpOutput(ctx);
+    %ctx = openExpDumpOutput(ctx);
     %ctx = openCountDumpOutput(ctx);
 
     %ctx = open_sctcSimCountOutput(ctx);
@@ -99,16 +100,18 @@ function doTheThing(ctx, analysis)
     %Dump_ThreshTable(ctx.OutputHandle, analysis);
 
     %do_sctcIndiv(ctx, analysis);
-    Dump_expResultStats(ctx.OutputHandle, analysis, 'BH');
+    %Dump_expResultStats(ctx.OutputHandle, analysis, 'BHImaris');
 
     %dumpCountsIndiv(ctx, analysis);
 
-    %analysis = AnalysisFiles.fixExpRefsetOrganization(analysis);
-    %fprintf('hold\n');
-    %[analysis, ~] = AnalysisFiles.activateExpRefSet(analysis, 'BH');
-    %save(ctx.ResultsPath, 'analysis');
+%     analysis = AnalysisFiles.fixExpRefsetOrganization(analysis);
+%     %fprintf('hold\n');
+%     [analysis, ~] = AnalysisFiles.activateExpRefSet(analysis, 'BHImaris');
+%     save(ctx.ResultsPath, 'analysis');
 
     %Dump_JustCoords_231128(analysis, [ctx.coords_dir filesep analysis.imgname '_calls.mat']);
+    analysis = plotbug_correct_240214(analysis);
+    save(ctx.ResultsPath, 'analysis');
 
     %Look for truthset
 %     if isfield(analysis, 'simkey') | isfield(analysis, 'exprefset')
@@ -122,8 +125,17 @@ function bool_res = shouldSkip(imgName)
     bool_res = false;
     %bool_res = skip_sctc(imgName);
 
-    if startsWith(imgName, 'sim'); bool_res = true; end
-    if startsWith(imgName, 'rsfish_sim'); bool_res = true; end
+    if ~startsWith(imgName, 'simerly_'); bool_res = true; end
+
+%     if ~startsWith(imgName, 'simerly_') & ~startsWith(imgName, 'simneg_')
+%         bool_res = true;
+%     end
+
+%     if startsWith(imgName, 'sim_'); bool_res = true; end
+%     if startsWith(imgName, 'simvar_'); bool_res = true; end
+%     if startsWith(imgName, 'simvarmass_'); bool_res = true; end
+%     if startsWith(imgName, 'simneg_'); bool_res = true; end
+%     if startsWith(imgName, 'rsfish_sim'); bool_res = true; end
 end
 
 function ctx = genScriptContextStruct(basedir)
@@ -151,6 +163,8 @@ function dirname = getSetOutputDirName(imgname)
         end
     elseif startsWith(imgname, 'ROI')
         dirname = 'munsky_lab';
+    elseif startsWith(imgname, 'simerly_')
+        dirname = 'simerly_lab';
     else
         dirname = groupname;
     end

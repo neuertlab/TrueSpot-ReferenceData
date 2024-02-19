@@ -14,8 +14,8 @@ addpath('./test');
 
 % ========================== Constants ==========================
 
-START_INDEX = 80;
-END_INDEX = 947;
+START_INDEX = 1025;
+END_INDEX = 1316;
 
 DUMP_SPOTCOUNTS = true;
 DUMP_FSCORES = true;
@@ -60,6 +60,10 @@ for i = START_INDEX:END_INDEX
     else
         continue;
     end
+    
+    if ~isfield(analysis, 'refsets') & ~isfield(analysis, 'simkey')
+        continue;
+    end
 
     if DUMP_SPOTCOUNTS
         figpath = [spc_figdir filesep 'spc__' myname '.png'];
@@ -85,6 +89,7 @@ for i = START_INDEX:END_INDEX
         close(fig_handle);
     end
 
+    clear analysis
 end
 
 % ========================== Helper Functions ==========================
@@ -100,6 +105,8 @@ function dirname = getSetOutputDirName(imgname)
         else
             dirname = groupname;
         end
+    elseif strcmp(groupname, 'simerly')
+        dirname = 'simerly_lab';
     else
         dirname = groupname;
     end

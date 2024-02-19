@@ -14,19 +14,16 @@ COLOR_HB = [0.667 0.220 0.220];
 COLOR_BF = [0.000 0.000 1.000];
 COLOR_RS = [0.000 0.800 0.000];
 COLOR_DB = [0.700 0.700 0.000];
+LINE_WIDTH = 2;
+LINE_STYLE = '-';
 
 fig_handle = figure(figno);
 subplot(2,2,1);
 if isfield(img_summary, 'results_hb')
-    if isfield(img_summary.results_hb, 'performance')
-        x = img_summary.results_hb.performance{:,'sensitivity'};
-        y = double(img_summary.results_hb.performance{:,'precision'});
-
-        fig_handle_temp = SpotPlots.renderPRPlot(x, y,...
-            COLOR_HB, figno, fig_handle);
-    else
-        fig_handle_temp = [];
-    end
+    PlotIndivPRCurve(img_summary.results_hb, COLOR_HB, LINE_WIDTH, LINE_STYLE);
+    xlim([0.0 1.0]);
+    ylim([0.0 1.0]);
+    fig_handle_temp = fig_handle;
 else
     fig_handle_temp = [];
 end
@@ -36,15 +33,10 @@ title('Neuert Lab');
 
 subplot(2,2,2);
 if isfield(img_summary, 'results_bf')
-    if isfield(img_summary.results_bf, 'performance')
-        x = img_summary.results_bf.performance{:,'sensitivity'};
-        y = double(img_summary.results_bf.performance{:,'precision'});
-
-        fig_handle_temp = SpotPlots.renderPRPlot(x, y,...
-            COLOR_BF, figno, fig_handle);
-    else
-        fig_handle_temp = [];
-    end
+    PlotIndivPRCurve(img_summary.results_bf, COLOR_BF, LINE_WIDTH, LINE_STYLE);
+    xlim([0.0 1.0]);
+    ylim([0.0 1.0]);
+    fig_handle_temp = fig_handle;
 else
     fig_handle_temp = [];
 end
@@ -54,15 +46,10 @@ title('BigFISH');
 
 subplot(2,2,3);
 if isfield(img_summary, 'results_rs')
-    if isfield(img_summary.results_rs, 'performance')
-        x = img_summary.results_rs.performance{:,'sensitivity'};
-        y = double(img_summary.results_rs.performance{:,'precision'});
-
-        fig_handle_temp = SpotPlots.renderPRPlot(x, y,...
-            COLOR_RS, figno, fig_handle);
-    else
-        fig_handle_temp = [];
-    end
+    PlotIndivPRCurve(img_summary.results_rs, COLOR_RS, LINE_WIDTH, LINE_STYLE);
+    xlim([0.0 1.0]);
+    ylim([0.0 1.0]);
+    fig_handle_temp = fig_handle;
 else
     fig_handle_temp = [];
 end
@@ -72,15 +59,10 @@ title('RS-FISH');
 
 subplot(2,2,4);
 if isfield(img_summary, 'results_db')
-    if isfield(img_summary.results_db, 'performance')
-        x = img_summary.results_db.performance{:,'sensitivity'};
-        y = double(img_summary.results_db.performance{:,'precision'});
-
-        fig_handle_temp = SpotPlots.renderPRPlot(x, y,...
-            COLOR_DB, figno, fig_handle);
-    else
-        fig_handle_temp = [];
-    end
+    PlotIndivPRCurve(img_summary.results_db, COLOR_DB, LINE_WIDTH, LINE_STYLE);
+    xlim([0.0 1.0]);
+    ylim([0.0 1.0]);
+    fig_handle_temp = fig_handle;
 else
     fig_handle_temp = [];
 end

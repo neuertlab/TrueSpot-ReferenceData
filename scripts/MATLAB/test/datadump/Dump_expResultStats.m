@@ -14,7 +14,9 @@ function Dump_expResultStats(outputFile, analysis, refsetId)
     %Determine if skip.
     %Skip if sim or no truthset.
     if startsWith(analysis.imgname, 'sim')
-        return;
+        if ~startsWith(analysis.imgname, 'simerly_')
+            return;
+        end
     elseif startsWith(analysis.imgname, 'rsfish_sim')
         return;
     end
@@ -232,6 +234,23 @@ function printGroups(outputFile, analysis)
             fprintf(outputFile, 'Preibisch_sim\tPreibisch_sim\t');
         else
             fprintf(outputFile, 'Preibisch_celegans\tPreibisch_celegans\t');
+        end
+    elseif startsWith(analysis.imgname, 'simerly_')
+        ptarg = analysis.probe_target;
+        flurophore = analysis.probe;
+        if contains(analysis.imgname, '_40x_')
+            gname = ['simerly_40x_' ptarg '_' flurophore];
+            fprintf(outputFile, '%s\t%s\t', gname, gname);
+        elseif contains(analysis.imgname, '_HiBkg_')
+            if contains(analysis.cell_type, 'Hypothalamus')
+                gname = ['simerly_HiBkg_ARH_' ptarg '_' flurophore];
+            else
+                gname = ['simerly_HiBkg_BST_' ptarg '_' flurophore];
+            end
+            fprintf(outputFile, '%s\t%s\t', gname, gname);
+        elseif contains(analysis.imgname, '_LoBkg_')
+            gname = ['simerly_LoBkg_' ptarg '_' flurophore];
+            fprintf(outputFile, '%s\t%s\t', gname, gname);
         end
     end
 end
