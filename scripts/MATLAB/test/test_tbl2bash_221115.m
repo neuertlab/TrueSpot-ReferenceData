@@ -41,7 +41,7 @@ GAUSS_RAD = 3;
 
 RUN_HB = true;
 RUN_BFNR = false;
-RUN_BFRS = true;
+RUN_BFRS = false;
 RUN_QUANT = false;
 OVERWRITE = false;
 

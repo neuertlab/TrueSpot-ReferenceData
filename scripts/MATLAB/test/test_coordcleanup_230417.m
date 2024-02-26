@@ -15,7 +15,7 @@ addpath('./test/datadump');
 
 % ========================== Constants ==========================
 
-START_INDEX = 1164;
+START_INDEX = 1039;
 END_INDEX = 1233;
 
 INCL_LIST = [];

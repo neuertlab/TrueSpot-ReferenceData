@@ -27,7 +27,7 @@ MATLAB_DIR = [ClusterWorkDir '/matlab'];
 addpath('./core');
 
 DETECT_THREADS = 4;
-RAM_PER_CORE = 8;
+RAM_PER_CORE = 16;
 HRS_PER_IMAGE = 8;
 
 OVERWRITE = false;
@@ -38,7 +38,7 @@ TH_ITR = 250;
 TH_NTR = 0.1/TH_ITR;
 MIN_TH = 0.0036;
 %MIN_TH = TH_NTR;
-START_I = 1; %Maybe cutting out the lowest thresholds will help the memory problem?
+START_I = 5; %Maybe cutting out the lowest thresholds will help the memory problem?
 while ((START_I * TH_NTR) < MIN_TH)
     START_I = START_I + 1;
 end
