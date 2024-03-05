@@ -23,6 +23,9 @@ The set of 1000 simulated images with randomized parameters was generated with `
 ### 500 Yeast Time-Course Mimicking Images (simytc)
 The simytc set consists of 250 images generated with parameters to attempt to mimic the CY5 channel in the experimental yeast time course images (this set is suffixed CY5L), and 250 images meant to mimic the TMR channel of the time course (suffixed TMRL). These images were generated with `scripts/Sim Image Generation/simfish_wrapper_4.py` and imported with `test_importsimytc_230330.m`. The import script applied two filters to the output TIF images (leaving the unprocessed versions in the MAT files). The first filter was meant to simulate a common effect seen in experimental images where the center of a given slice is slightly brighter than the edges. The second filter blurred z slices near the ends of the stack to randomized degrees to replicate another effect seen in experimental images.
 
+### 500 Simulated True Negatives (simneg)
+A set of 500 "true negative" 512x512x16 simulated images was generated using the `scripts/Sim Image Generation/simfish_wrapper_neg.py` script, in a similar fashion to the other large simulated image batches. These images were generated with no spots/signal at all. Background base level and variation was randomized. TIF conversion/parameter import was done using `test_importsimneg_231018.m`, a derivative of `test_importsimytc_230330.m`. Because it came from the simytc script, the same edge darkening and extreme z blurring filters were applied. Simulation parameters were saved in the resulting mat files, but as there were no true positive spots, there are no ground truth keys.
+
 ## Tool Running
 This section describes how the four tools were run.
 
@@ -37,7 +40,9 @@ TrueSpot was run from the command line (via `Main_RNASpots.m`) on the ACCRE clus
 
 We used MATLAB 2018b for these runs to ensure some degree of backward compatilibity, but it appears to work on versions at least up to 2022a (probably works on newer, just haven't tested).
 
-Additionally, an older version of TrueSpot from early 2023 was used rather than the version available in the repository upon initial release. The only changes made were code organization and formatting of the tool's data output since the debug version outputs were extremely messy. Nothing was changed in the internal algorithms or pipeline flow.
+Additionally, an older version of TrueSpot from early 2023 was used for the majority of the tests (excepting the simerly lab and simneg groups, which were run much later) rather than the version available in the repository upon initial release. The primary changes made were code organization and formatting of the tool's data output since the debug version outputs were extremely messy. Nothing was changed in the internal algorithms or pipeline flow until February 2024. The version from late 2023 was used to run the remaining aforementioned groups, though there was a holdover from the messier debug code that was incompatible with the changes which prevented the automatic threshold call from being saved (this has since been fixed). As a result, the callsets where re-thresholded using the `bp_fullset_230612.m` and `plotbug_correct_240214.m` scripts.
+
+The Feb 2024 update moved the code that cleaned up log projection plots for fitting (filling in holes and removing negative extremes) to its own function with some changes. Additionally, two features were added to the automatic thresholder: 
 
 ### Spot Fitting -- TrueSpot
 The spot fitting/quantification module was separate from the spot detection module when we did these runs. The script generation for fitting was also handled by `test_tbl2bash_221115.m` (if "quant" is requested), but TrueSpot's fitting module was called via `Main_RNAQuant.m`.
@@ -217,7 +222,7 @@ This section describes how statistical tests were run for applicable analyses.
 ### Performance Metrics - Simulated Images
 The boiler-plate R code used to run statistical tests for all analyses of simulated images can be found in `scripts/Figure Generation/simResults.R`. This code was written to be modified on the spot as needed (generally by swapping in and out variable names for desired parameters) and run interpreted.
 
-The statistics obtained for the three primary performance metrics (Maximum Recall, PR-AUC, and auto threshold F-Score) were 25th, 50th, and 75th percentiles, mean, standard deviation, and Mann-Whitney test statistics/ p-value for comparisons between tool result distributions on each of the two simulated image sets. These are all reported in one of the supplementary tables (Table S1A-C as of time of writing). 
+The statistics obtained for the three primary performance metrics (Maximum Recall, PR-AUC, and auto threshold F-Score) were 25th, 50th, and 75th percentiles, mean, standard deviation, and Mann-Whitney test statistics/ p-value for comparisons between tool result distributions on each of the two simulated image sets. These are all reported in one of the supplementary tables (Table S1A-C). 
 
 Base code for distribution stat retrieval (using PR-AUC as example):
 ```
@@ -237,7 +242,7 @@ MW_p = test_res$p.value
 ```
 
 ### Performance Metrics - Simulated Images Subpixel Fit
-The boiler-plate code for the subpixel fit analyses are also in `simResults.R`, and the output is in Table S11A-C as of writing. Quartiles, mean, standard deviation, and Mann-Whitney comparisons were also run for distributions of spot distances in xy, z, and xyz. However, as the n for these sets is extremely high the usefulness of the Mann-Whitney tests is questionable. Still, the rough versions of the code used is the same as in the previous section, just using the fit distance datasets and metrics instead.
+The boiler-plate code for the subpixel fit analyses are also in `simResults.R`, and the output is in Table S13A-C. Quartiles, mean, standard deviation, and Mann-Whitney comparisons were also run for distributions of spot distances in xy, z, and xyz. However, as the n for these sets is extremely high the usefulness of the Mann-Whitney tests is questionable. Still, the rough versions of the code used is the same as in the previous section, just using the fit distance datasets and metrics instead.
 
 ### Parameter Correlations - Simulated Images
 Spearman correlation tests were performed to test for correlation between two parameters in a batch of simulated images (we chose Spearman over Pearson to prioritize non-linear correlations as initial plots seemed to indicate possible prevalence of such relationships for these datasets). The code for these too can be found in `simResults.R`.
@@ -260,6 +265,8 @@ The code for performance evaluation and figure generation on the experimental im
 ### Count Correlations - Yeast Time Course-Like Simulations
 
 ### Curve Similarity - Yeast Time Course
+
+### Threshold Variation Measurements
 
 ## Figure Generation
 This section describes how figures were generated from data tables.
