@@ -33,7 +33,7 @@ This section describes how the four tools were run.
 Information about each image channel that was to be benchmarked, including file paths and metadata required for various tools, was stored in master csv tables. The table listing all experimental and miscellaneous simulated images is `test_images.csv`. `test_images_simvarmass.csv` and `test_images_simytc.csv` contain the info for their respective megabatches of simulated images. MATLAB scripts (as described below) pulled from these tables to generate bash scripts to run the various tools on our cluster in parallel. 
 
 ### Cell Segmentation
-Cell segmentation for experimental images was conducted once using the GUI version of our existing cell segmentation tool (Kesler, et al. 2019)(link). These same cell masks were used for all analyses and all tools, even for tools such as Big-FISH which have their own cell segmentation modules. This was mostly to keep things consistent.
+Cell segmentation for experimental images was conducted once using the GUI version of our existing cell segmentation tool ([Kesler, et al. 2019](https://doi.org/10.1038/s41598-019-46689-5)). These same cell masks were used for all analyses and all tools, even for tools such as Big-FISH which have their own cell segmentation modules. This was mostly to keep things consistent.
 
 ### Spot Calling -- TrueSpot
 TrueSpot was run from the command line (via `Main_RNASpots.m`) on the ACCRE cluster. Each image channel was assigned its own slurm job and resources so that multiple channels could be processed in parallel (TrueSpot's spot detection itself can be further parallelized). The bash scripts for each slurm job and the script that submitted the jobs were genereated by `test_tbl2bash_221115.m` (along with Big-FISH job scripts). Variables at the top of the script determine which images are pulled and which runs are included.
@@ -42,7 +42,9 @@ We used MATLAB 2018b for these runs to ensure some degree of backward compatilib
 
 Additionally, an older version of TrueSpot from early 2023 was used for the majority of the tests (excepting the simerly lab and simneg groups, which were run much later) rather than the version available in the repository upon initial release. The primary changes made were code organization and formatting of the tool's data output since the debug version outputs were extremely messy. Nothing was changed in the internal algorithms or pipeline flow until February 2024. The version from late 2023 was used to run the remaining aforementioned groups, though there was a holdover from the messier debug code that was incompatible with the changes which prevented the automatic threshold call from being saved (this has since been fixed). As a result, the callsets where re-thresholded using the `bp_fullset_230612.m` and `plotbug_correct_240214.m` scripts.
 
-The Feb 2024 update moved the code that cleaned up log projection plots for fitting (filling in holes and removing negative extremes) to its own function with some changes. Additionally, two features were added to the automatic thresholder: 
+The Feb 2024 update moved the code that cleaned up log projection plots for fitting (filling in holes and removing negative extremes) to its own function with some changes. Additionally, two features were added to the automatic thresholder: the option to log project BEFORE apply the absdiff/Fano transformation, and the option to scale window sizes to the size of the tested range.
+
+Release version 1.0.0 has the same thresholder version that was used for the tests done for the manuscript preprint. Version 1.1.0 will have the updated thresholder.
 
 ### Spot Fitting -- TrueSpot
 The spot fitting/quantification module was separate from the spot detection module when we did these runs. The script generation for fitting was also handled by `test_tbl2bash_221115.m` (if "quant" is requested), but TrueSpot's fitting module was called via `Main_RNAQuant.m`.
