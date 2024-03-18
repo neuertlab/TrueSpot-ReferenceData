@@ -15,12 +15,11 @@ Large data files and file collections used for benchmarking are not hosted in th
 
 ### Image Stacks
 * [Yeast time course](https://doi.org/10.17867/10000118) [(Li & Neuert 2019)](https://www.nature.com/articles/s41597-019-0106-6)
-* Yeast Msb2-GFP & Opy2-GFP (cite)
-* mESC Xist, Tsix, & Histone (cite)
-* Munsky lab HeLa images (cite)
-* Neuert lab simulated images
-* RS-FISH benchmarking set
-* Misc. experimental images
+* Yeast Msb2-GFP & Opy2-GFP (Hospelhorn, et al. 2024)
+* mESC Xist, Tsix, & Histone (Kesler & Neuert 2024)
+* Munsky lab HeLa images (Vo, et al. 2023)
+* Neuert lab simulated images (Hospelhorn, et al. 2024)
+* RS-FISH benchmarking set (Bahry, et al. 2022)
 
 ### Experimental Image Manual Reference Sets
 

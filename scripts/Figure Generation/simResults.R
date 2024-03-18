@@ -270,14 +270,16 @@ snr_safe <- filter(plotTable, is.finite(SNR))
 snr_safe <- filter(snr_safe, ZVP < 0.7)
 
 #Change x and y for whatever testing
-ggplot(snr_safe, aes(x = ZVP, y = FScore)) +
+plott <- ggplot(snr_safe, aes(x = SNR, y = ZVP)) +
 	geom_density_2d_filled(bins = 50) + 
 	ylim(0.0, 1.0) +
 	xlim(0.5, 1.0) +
 	facet_wrap(vars(Tool)) + 
 	scale_x_log10()
+	
+test <- ggplot_build(plott)
 
-ggplot(snr_safe, aes(x = SNR_DIFF, y = PRAUC)) +
+ggplot(snr_safe, aes(x = ZVP, y = FScore)) +
 	stat_density_2d(geom = "raster",
 		aes(fill = after_stat(density)),
 		contour = FALSE) + 

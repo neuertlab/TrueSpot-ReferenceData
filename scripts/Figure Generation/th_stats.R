@@ -2,11 +2,11 @@
 library(tidyverse)
 
 #Read table
-inputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\thstatsdump_230612.tsv"
+inputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\thstatsdump_240112.tsv"
 thTable <- read_tsv(inputTablePath)
 
 #Remove small and non-experimental groups
-thTable <- filter(thTable, GROUP_A != "Tsix_AF594")
+thTable <- filter(thTable, GROUP_A != "TsixE_AF594")
 thTable <- filter(thTable, GROUP_A != "STL1_TMR_Smpl")
 thTable <- filter(thTable, GROUP_A != "CTT1_CY5_Smpl")
 thTable <- filter(thTable, GROUP_A != "SimBig")
@@ -26,7 +26,7 @@ thTable$BF_GROUPA_STD <- rep(NaN, nrow(thTable))
 thTable$BF_GROUPB_STD <- rep(NaN, nrow(thTable))
 
 #Get groups
-groupAOrder <- c("Xist_CY5", "Tsix_TMR", "CTT1_CY5", "STL1_TMR", "HeLa_CY5", "HeLa_GFP", "scprotein", "Histone_AF488", "SimCY5L", "SimTMRL")
+groupAOrder <- c("XistE_CY5", "XistI_CY5", "TsixE_TMR", "TsixI_TMR", "CTT1_CY5", "STL1_TMR", "HeLa_CY5", "HeLa_GFP", "Msb2", "Opy2", "H3K36me3", "H3K4me2", "SimCY5L", "SimTMRL")
 thTable$GROUP_A <- factor(thTable$GROUP_A, levels=groupAOrder)
 groupASet <- unique(thTable$GROUP_A)
 groupBSet <- unique(thTable$GROUP_B)
@@ -95,7 +95,7 @@ expOnly <- filter(thPlotTable, (GROUP_A != "SimCY5L") & (GROUP_A != "SimTMRL"))
 simOnly <- filter(thPlotTable, (GROUP_A == "SimCY5L") | (GROUP_A == "SimTMRL"))
 ggplot(expOnly, aes(GROUP_A, THVAL_NORM_A)) +
 	geom_boxplot(aes(colour = TOOL), outlier.alpha = 0.25) +
-	geom_jitter(aes(colour = TOOL), width = 0.3, alpha = 0.5)
+	geom_point(aes(colour = TOOL), width = 0.3, alpha = 0.5)
 
 #CoV plot
 ggplot(expOnly, aes(GROUP_A, COV_A)) + 
@@ -270,3 +270,6 @@ for (i in 1:groupBCount) {
 	gidxs <- which(thTable$GROUP_B == groupBSet[i] & !is.nan(thTable$THVAL_BF) & !is.nan(thTable$THVAL_HB))
 	th_table_append$n[i] <- length(gidxs)
 }
+
+outputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\thVar_GroupStats.tsv"
+write_tsv(th_stats_table, outputTablePath)
