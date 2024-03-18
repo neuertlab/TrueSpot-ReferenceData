@@ -1,5 +1,5 @@
 # TrueSpot Benchmarking Data Repository
-This repository is for scripts, figures, and smaller data tables used for benchmarking RNA-FISH spot detection tools as described in Hospelhorn, Kesler, and Neuert 2023. Image stacks and large result files are hosted elsewhere, linked below.
+This repository is for scripts, figures, and smaller data tables used for benchmarking RNA-FISH spot detection tools as described in Hospelhorn, et al. 2024. Image stacks and large result files are hosted elsewhere, linked below.
 
 ## Contents
 The included `Documentation.md` file describes the processes, data tables, and scripts used for various analyses in more detail. 
@@ -25,4 +25,4 @@ Large data files and file collections used for benchmarking are not hosted in th
 
 ### By-Image Results (Callset) Composite Files
 
-### DeepBlink Retrained Model Data
+### deepBlink Retrained Model Data

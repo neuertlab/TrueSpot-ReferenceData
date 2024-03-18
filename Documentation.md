@@ -44,7 +44,7 @@ Additionally, an older version of TrueSpot from early 2023 was used for the majo
 
 The Feb 2024 update moved the code that cleaned up log projection plots for fitting (filling in holes and removing negative extremes) to its own function with some changes. Additionally, two features were added to the automatic thresholder: the option to log project BEFORE apply the absdiff/Fano transformation, and the option to scale window sizes to the size of the tested range.
 
-Release version 1.0.0 has the same thresholder version that was used for the tests done for the manuscript preprint. Version 1.1.0 will have the updated thresholder.
+Release version 1.0.x has the same thresholder version that was used for the tests done for the manuscript preprint. Version 1.1.0 will have the updated thresholder.
 
 ### Spot Fitting -- TrueSpot
 The spot fitting/quantification module was separate from the spot detection module when we did these runs. The script generation for fitting was also handled by `test_tbl2bash_221115.m` (if "quant" is requested), but TrueSpot's fitting module was called via `Main_RNAQuant.m`.
@@ -75,8 +75,8 @@ The `test_prep_rsfish_230126.m` script was responsible for generating RS-FISH jo
 
 `test_prep_rsfish_230126.m` also generates some other code for job submission scripts that allows it to modify existing job scripts to pick up where they left off if the jobs time out before RS-FISH creates output callsets for all thresholds to test. This was a recurring problem, but this again isn't exactly an issue with RS-FISH itself as it's not really how it was intended to be used.
 
-### Spot Calling & Fitting -- DeepBlink
-DeepBlink prediction was also performed on the cluster with parallel jobs for image channels. DeepBlink, like Big-FISH, is a python tool, so it also needed its own virtual environment for running.
+### Spot Calling & Fitting -- deepBlink
+deepBlink prediction was also performed on the cluster with parallel jobs for image channels. deepBlink, like Big-FISH, is a python tool, so it also needed its own virtual environment for running.
 
 ```
 module load GCCcore/.10.2.0
@@ -88,10 +88,10 @@ pip install deepblink
 deactivate
 ```
 
-The script used to generate the job scripts and job submission script was `test_prep_deepblink_230203.m`. As DeepBlink utilizes a deep learning approach rather than a filter-based approach, instead of a traditional threshold scan, we instead used call probabilities. Our DeepBlink runs request all spot calls with a probability of 1 - 100% in increments of 1%.
+The script used to generate the job scripts and job submission script was `test_prep_deepblink_230203.m`. As deepBlink utilizes a deep learning approach rather than a filter-based approach, instead of a traditional threshold scan, we instead used call probabilities. Our deepBlink runs request all spot calls with a probability of 1 - 100% in increments of 1%.
 
-### Model Training -- DeepBlink
-A subset of the mass simulated dataset was used to train an alternate model with DeepBlink. The subset was generated and prepared for DeepBlink by `test_gen_simmdl_deepblink_230524.m`. A breakdown of which images were included in the training set and which were run through prediction again using the new model are in `tables/simrando_train.txt` and `tables/simrando_pred.txt` respectively.
+### Model Training -- deepBlink
+A subset of the mass simulated dataset was used to train an alternate model with deepBlink. The subset was generated and prepared for deepBlink by `test_gen_simmdl_deepblink_230524.m`. A breakdown of which images were included in the training set and which were run through prediction again using the new model are in `tables/simrando_train.txt` and `tables/simrando_pred.txt` respectively.
 
 Training was run in WSL on a Windows 10 workstation. (This was a mistake - it took 2 weeks).
 ```
@@ -133,14 +133,14 @@ RS-FISH also outputs csv 0-based coordinate lists for each run. The output is su
 
 Like all other tools, consolidation and import into composite results files is done using `test_coordcleanup_230417.m` and `${TrueSpot_Repo}/core/RNACoords.m`.
 
-### Call Consolidation & Import -- DeepBlink
-DeepBlink outputs a single csv coordinate table per run. Table columns are x, y, call probability, z (for 3D images). Coordinates are 0-based and subpixel fitted (in x and y).
+### Call Consolidation & Import -- deepBlink
+deepBlink outputs a single csv coordinate table per run. Table columns are x, y, call probability, z (for 3D images). Coordinates are 0-based and subpixel fitted (in x and y).
 
-As with Big-FISH and RS-FISH, the coordinate table is imported, rounded, and stored in a `.mat` file once DeepBlink is done running (`Main_DeepBlink2Mat.m`). However, since there is only 1 csv file, it is not removed. This csv file is used directly to check subpixel fitting.
+As with Big-FISH and RS-FISH, the coordinate table is imported, rounded, and stored in a `.mat` file once deepBlink is done running (`Main_deepBlink2Mat.m`). However, since there is only 1 csv file, it is not removed. This csv file is used directly to check subpixel fitting.
 
-Results file consolidation is performed by `test_coordcleanup_230417.m` and `${TrueSpot_Repo}/core/RNACoords.m`, however unlike the other three tools, an extra step is required to make callsets comparable to truthsets or other callsets. DeepBlink operates in 2D, slice by slice. So while the output table includes z coordinates, there are a lot of redundant calls between slices resulting in an inflation in apparent false positives. The by-slice callsets were perserved in the composite results files, but 2D to 3D merging was performed (see `RNACoords.mergeSlicedSetTo3D`) to produce a 3D compatible callset.
+Results file consolidation is performed by `test_coordcleanup_230417.m` and `${TrueSpot_Repo}/core/RNACoords.m`, however unlike the other three tools, an extra step is required to make callsets comparable to truthsets or other callsets. deepBlink operates in 2D, slice by slice. So while the output table includes z coordinates, there are a lot of redundant calls between slices resulting in an inflation in apparent false positives. The by-slice callsets were perserved in the composite results files, but 2D to 3D merging was performed (see `RNACoords.mergeSlicedSetTo3D`) to produce a 3D compatible callset.
 
-The results from the DeepBlink retrained/"alt model" runs were imported into image results composite files using the `test_import_db_altmdl_230712.m` script. Images that were included in the training set were not run.
+The results from the deepBlink retrained/"alt model" runs were imported into image results composite files using the `test_import_db_altmdl_230712.m` script. Images that were included in the training set were not run.
 
 ## Truthset Handling
 This section describes the generation and storage of truth sets, both for sim images and for experimental images.
@@ -160,6 +160,7 @@ Truthsets for RS-FISH simulated images can be found in the results mat files und
 Of note, all Sim-FISH ground truths use only integer coordinates, whereas RS-FISH set ground truths have subpixel precise coordinates.
 
 ### Experimental Image Reference Set Generation
+**TODO:** The experimental refsets are now JUST in the results files. Also update for new organization.
 The code containing all of the brains for the agnostic manual reference set generation tool lies in `core/RNA_Threshold_SpotSelector.m`. The wrapper scripts used to cleanly call this tool are `test_launch_spotanno_221116` (used by B.H.) and `spotpickscript_v2` (used by other manual curators). These scripts are meant to be used interactively, the user plugging in their root directory and name of the image to curate and it pulling up the location of the spot call data and image file from a master table. 
 
 The `core/RNA_Threshold_SpotSelector.m` code renders the target image and its LoG filtered version (switching between slice-by-slice or maximum projection can be done with user input) into a MATLAB figure. Mouse and key listeners are used to allow the user to click on points on the image that they want to mark as spots. User can request computer snap their selections to an automated callset for feedback in tight clusters (any callset can be loaded in, not just TrueSpot's), but manual curators were instructed to override any computer suggestions that they did not agree with. Importantly, the same snapping algorithm was applied to these reference sets against all callsets upon performance analysis, so choice of computer set during manual spot selection should have no effect on performance metrics. 
@@ -181,20 +182,20 @@ Callsets and performance stats for all tools are stored in MATLAB `mat` files fo
 
 ![Figure describing the contents of the top level of two representative example results structs.](/doc/datadoc_resstruct_outer.png)
 
-Tool-specific results are in the sub-structures labeled `results_{TOOLABBR}`. Results for the retrained DeepBlink model, when present, can be found in `results_db_simmdl`.
+Tool-specific results are in the sub-structures labeled `results_{TOOLABBR}`. Results for the retrained deepBlink model, when present, can be found in `results_db_simmdl`.
 
 | Abbreviation | Tool |
 | ----- | ----- |
 | HB | TrueSpot ("Homebrew") |
 | BF | Big-FISH |
 | RS | RS-FISH |
-| DB | DeepBlink |
+| DB | deepBlink |
 
 Below is an example of a `results_hb` struct from a simulated image.
 
 ![Figure describing the contents of a tool-specific results substruct using a representative example.](/doc/datadoc_resstruct_inner_hb.png)
 
-There is some variation in which variables are present in structs from different tools (eg. DeepBlink contains the unmerged by-slice callset in addition to the merged one), but all should contain any information/data that was output by the tool in question.
+There is some variation in which variables are present in structs from different tools (eg. deepBlink contains the unmerged by-slice callset in addition to the merged one), but all should contain any information/data that was output by the tool in question.
 
 ### Simulated Image Summary Table
 The summary table used to run statistical tests and generate figures from the results of benchmarking tests on simulated images is `tables/sim_results.csv`. This file was generated (the same process is used for regeneration) by running the `run_dump_allsim_230424.m` script, which cycles through the results `mat` files and dumps pertinent information into a plain text table. Simulation parameters for the earlier simulated images and RS-FISH benchmarking set had to be re-added manually as they are not stored in the results mat files. These parameters can be found in the included `sim_results.csv` and in one of the supplementary tables in the manuscript.
