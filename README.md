@@ -17,12 +17,14 @@ Large data files and file collections used for benchmarking are not hosted in th
 * [Yeast time course](https://doi.org/10.17867/10000118) [(Li & Neuert 2019)](https://www.nature.com/articles/s41597-019-0106-6)
 * Yeast Msb2-GFP & Opy2-GFP (Hospelhorn, et al. 2024)
 * mESC Xist, Tsix, & Histone (Kesler & Neuert 2024)
-* Munsky lab HeLa images (Vo, et al. 2023)
+* Munsky lab HeLa images (Vo, et al. 2023) - Available upon request.
 * Neuert lab simulated images (Hospelhorn, et al. 2024)
 * RS-FISH benchmarking set (Bahry, et al. 2022)
 
-### Experimental Image Manual Reference Sets
-
 ### By-Image Results (Callset) Composite Files
 
+### Experimental Image Manual Reference Sets
+
 ### deepBlink Retrained Model Data
+
+### Cell Segmentation Masks
