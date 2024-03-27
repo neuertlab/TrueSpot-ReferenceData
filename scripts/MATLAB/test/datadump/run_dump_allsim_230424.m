@@ -20,17 +20,18 @@ addpath('./test');
 TablePath_Main = [BaseDir filesep 'test_images.csv'];
 TablePath_Mass = [BaseDir filesep 'test_images_simvarmass.csv'];
 TablePath_YTC = [BaseDir filesep 'test_images_simytc.csv'];
+TablePath_Simneg = [BaseDir filesep 'test_images_simneg.csv'];
 
-AllTablePaths = {TablePath_Main, TablePath_Mass, TablePath_YTC};
-GroupPrefixes = {'sim_', 'simvar_', 'rsfish_sim_', 'simvarmass_'};
+AllTablePaths = {TablePath_Main, TablePath_Mass, TablePath_YTC, TablePath_Simneg};
+GroupPrefixes = {'sim_', 'simvar_', 'rsfish_sim_', 'simvarmass_', 'simneg_'};
 ImgTableCount = size(AllTablePaths, 2);
 SimGroupCount = size(GroupPrefixes, 2);
 
-OutTablePath = [TblOutDir filesep 'stats_sim.tsv'];
-OutSpotsPathHB = [TblOutDir filesep 'spots_sim_hb.tsv'];
-OutSpotsPathBF = [TblOutDir filesep 'spots_sim_bf.tsv'];
-OutSpotsPathRS = [TblOutDir filesep 'spots_sim_rs.tsv'];
-OutSpotsPathDB = [TblOutDir filesep 'spots_sim_db.tsv'];
+OutTablePath = [TblOutDir filesep 'stats_sim_240327.tsv'];
+OutSpotsPathHB = [TblOutDir filesep 'spots_sim_hb_240327.tsv'];
+OutSpotsPathBF = [TblOutDir filesep 'spots_sim_bf_240327.tsv'];
+OutSpotsPathRS = [TblOutDir filesep 'spots_sim_rs_240327.tsv'];
+OutSpotsPathDB = [TblOutDir filesep 'spots_sim_db_240327.tsv'];
 
 XY_TRIM_RAD = 7;
 
@@ -158,6 +159,7 @@ for t = 1:ImgTableCount
                 end
             else
                 fprintf(OutTableFile, 'NaN\tNaN\t');
+                analysis.simkey = [];
             end
 
             if isfield(analysis, 'simparam')

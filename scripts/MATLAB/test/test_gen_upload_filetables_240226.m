@@ -1,15 +1,16 @@
 %
 %%  !! UPDATE TO YOUR BASE DIR
-BaseDir = 'D:\Users\hospelb\labdata\imgproc\imgproc';
-%BaseDir = 'D:\usr\bghos\labdat\imgproc';
+%BaseDir = 'D:\Users\hospelb\labdata\imgproc\imgproc';
+BaseDir = 'D:\usr\bghos\labdat\imgproc';
 
-ImgProcDir = 'D:\Users\hospelb\labdata\imgproc';
-%ImgProcDir = 'D:\usr\bghos\labdat\imgproc';
+%ImgProcDir = 'D:\Users\hospelb\labdata\imgproc';
+ImgProcDir = 'D:\usr\bghos\labdat\imgproc';
 
-ImgDir = 'C:\Users\hospelb\labdata\imgproc';
-%ImgDir = 'D:\usr\bghos\labdat\imgproc';
+%ImgDir = 'C:\Users\hospelb\labdata\imgproc';
+ImgDir = 'D:\usr\bghos\labdat\imgproc';
 
-StageDir = 'C:\Users\hospelb\labdata\biostudies_ftp';
+%StageDir = 'C:\Users\hospelb\labdata\biostudies_ftp';
+StageDir = 'D:\usr\bghos\labdat\biostudies_ftp';
 
 addpath('./core');
 addpath('./test');
@@ -17,8 +18,13 @@ addpath('./test/datadump');
 
 % ========================== General Context ==========================
 
-DateSuffix = '240226';
+DateSuffix = '240320';
 OutputDir = [BaseDir filesep 'upload'];
+ResultsDir = [BaseDir filesep 'data' filesep 'results'];
+
+if ~isfolder(OutputDir)
+    mkdir(OutputDir);
+end
 
 % ========================== Parameters ==========================
 
@@ -41,19 +47,13 @@ for t = 1:ImgTableCount
 
     entry_count = size(image_table, 1);
     for r = 1:entry_count
-        scriptCtx.TableRow = r;
 
         myname = getTableValue(image_table, r, 'IMGNAME');
         fprintf('> Now processing %s (%d of %d)...\n', myname, r, entry_count);
-        if shouldSkip(myname)
-            fprintf('\t> Skipping for this operation...\n');
-            continue;
-        end
 
         %Get res file path
         set_group_dir = getSetOutputDirName(myname);
-        ResFilePath = [scriptCtx.ResultsDir filesep set_group_dir filesep myname '_summary.mat'];
-        scriptCtx.ResultsPath = ResFilePath;
+        ResFilePath = [ResultsDir filesep set_group_dir filesep myname '_summary.mat'];
 
         if isfile(ResFilePath)
             load(ResFilePath, 'analysis');
@@ -63,7 +63,8 @@ for t = 1:ImgTableCount
         end
 
 %----------- DO THING
-        groupname = getSupergroupName(imgname);
+        supergroup = getSupergroupName(myname);
+        if strcmp(supergroup, 'scrna'); continue; end
         doResultsEntry(fhStruct, image_table, r, analysis, supergroup);
 
         tifpath = getTableValue(image_table, r, 'IMAGEPATH');
@@ -111,17 +112,33 @@ function doResultsEntry(fhStruct, table, table_row, analysis, supergroup)
 
     subgroup = getSubgroup(analysis, supergroup, tifname);
 
-    fprintf(fhandle, '%s/%s.mat\t%s\t%s', supergroup, iname, ...
+    fprintf(fhandle, 'TrueSpot2024/%s/%s_summary.mat\t%s\t%s\t', supergroup, iname, ...
         iname, subgroup);
 
     tstr = getTableValue(table, table_row, 'TARGET');
     if isempty(tstr); tstr = '[Unknown]'; end
     if strcmp(tstr, 'Sim'); tstr = '(Simulation)'; end
+    if startsWith(supergroup, 'sim'); tstr = '(Simulation)'; end
+    if strcmp(supergroup, 'sctc')
+        if strcmp(tstr, 'STL1')
+            tstr = 'CTT1';
+        else
+            tstr = 'STL1';
+        end
+    end
     fprintf(fhandle, '%s\t', tstr);
 
     tstr = getTableValue(table, table_row, 'PROBE');
     if isempty(tstr); tstr = '[Unknown]'; end
     if strcmp(tstr, 'Sim'); tstr = '(Simulation)'; end
+    if startsWith(supergroup, 'sim'); tstr = '(Simulation)'; end
+    if strcmp(supergroup, 'sctc')
+        if strcmp(tstr, 'CY5')
+            tstr = 'TMR';
+        else
+            tstr = 'CY5';
+        end
+    end
     fprintf(fhandle, '%s\t', tstr);
     
     fprintf(fhandle, '%s\t', tifname);
@@ -189,7 +206,7 @@ function doResultsEntry(fhStruct, table, table_row, analysis, supergroup)
     end
 
     %Supergroup specific...
-    if startsWith(supergroup, 'mESC')
+    if startsWith(supergroup, 'mesc')
         if contains(iname, 'D0')
             fprintf(fhandle, '\t0');
         elseif contains(iname, 'DH')

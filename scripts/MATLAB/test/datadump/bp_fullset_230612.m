@@ -18,7 +18,7 @@ scriptCtx = genScriptContextStruct(BaseDir);
 scriptCtx.ImgProcDir = ImgProcDir;
 scriptCtx.ImgDir = ImgDir;
 
-scriptCtx.DateSuffix = '240214';
+scriptCtx.DateSuffix = '240327';
 scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
 
 % ========================== Parameters ==========================
@@ -77,13 +77,15 @@ function ctx = initialize(ctx)
     %ctx = openThOutput(ctx);
 
     %ctx = open_sctcOutput(ctx);
-    %ctx = openExpDumpOutput(ctx);
+    ctx = openExpDumpOutput(ctx);
     %ctx = openCountDumpOutput(ctx);
 
     %ctx = open_sctcSimCountOutput(ctx);
 
     %ctx.coords_dir = [ctx.OutputDir filesep 'coords_dump'];
     %mkdir(ctx.coords_dir);
+
+    %ctx = openMinThCountOutput(ctx);
 end
 
 function ctx = finalize(ctx)
@@ -100,7 +102,7 @@ function doTheThing(ctx, analysis)
     %Dump_ThreshTable(ctx.OutputHandle, analysis);
 
     %do_sctcIndiv(ctx, analysis);
-    %Dump_expResultStats(ctx.OutputHandle, analysis, 'BHImaris');
+    Dump_expResultStats(ctx.OutputHandle, analysis, 'BH');
 
     %dumpCountsIndiv(ctx, analysis);
 
@@ -110,14 +112,17 @@ function doTheThing(ctx, analysis)
 %     save(ctx.ResultsPath, 'analysis');
 
     %Dump_JustCoords_231128(analysis, [ctx.coords_dir filesep analysis.imgname '_calls.mat']);
-    analysis = plotbug_correct_240214(analysis);
-    save(ctx.ResultsPath, 'analysis');
+    %analysis = plotbug_correct_240214(analysis);
+%     analysis = rethresh_all_240219(analysis);
+%     save(ctx.ResultsPath, 'analysis');
 
     %Look for truthset
 %     if isfield(analysis, 'simkey') | isfield(analysis, 'exprefset')
 %         analysis = Update_TrimAllSim_230912(analysis, 7);
 %         save(ctx.ResultsPath, 'analysis');
 %     end
+
+    %writeMinThCountLine(ctx, analysis);
 end
 
 function bool_res = shouldSkip(imgName)
@@ -125,17 +130,17 @@ function bool_res = shouldSkip(imgName)
     bool_res = false;
     %bool_res = skip_sctc(imgName);
 
-    if ~startsWith(imgName, 'simerly_'); bool_res = true; end
+    %if ~startsWith(imgName, 'simerly_'); bool_res = true; end
 
 %     if ~startsWith(imgName, 'simerly_') & ~startsWith(imgName, 'simneg_')
 %         bool_res = true;
 %     end
 
-%     if startsWith(imgName, 'sim_'); bool_res = true; end
-%     if startsWith(imgName, 'simvar_'); bool_res = true; end
-%     if startsWith(imgName, 'simvarmass_'); bool_res = true; end
-%     if startsWith(imgName, 'simneg_'); bool_res = true; end
-%     if startsWith(imgName, 'rsfish_sim'); bool_res = true; end
+    if startsWith(imgName, 'sim_'); bool_res = true; end
+    if startsWith(imgName, 'simvar_'); bool_res = true; end
+    if startsWith(imgName, 'simvarmass_'); bool_res = true; end
+    if startsWith(imgName, 'simneg_'); bool_res = true; end
+    if startsWith(imgName, 'rsfish_sim'); bool_res = true; end
 end
 
 function ctx = genScriptContextStruct(basedir)
@@ -402,5 +407,55 @@ function dumpCountsIndiv(ctx, analysis)
 
     fprintf(ctx.OutputHandle, '%.4f\t', rs_th);
     fprintf(ctx.OutputHandle, '%.2f\n', db_th);
+
+end
+
+function ctx = openMinThCountOutput(ctx)
+    outpath = [ctx.OutputDir filesep 'minthSpots_' ctx.DateSuffix '.tsv'];
+    ctx.OutputHandle = fopen(outpath, 'w');
+
+    outfields = {'IMGNAME' 'SIM_OR_EXP' 'TOTAL_VOXELS' 'MIN_TH_VAL' 'MIN_TH_SPOTS' ...
+        'TOTAL_VOX_LOG' 'MINTH_SPOTS_LOG' 'PROP'};
+    field_count = size(outfields, 2);
+    for i = 1:field_count
+        if i > 1; fprintf(ctx.OutputHandle, '\t'); end
+        fprintf(ctx.OutputHandle, outfields{i});
+    end
+    fprintf(ctx.OutputHandle, '\n');
+end
+
+function ctx = writeMinThCountLine(ctx, analysis)
+    if ~isfield(analysis, 'results_hb'); return; end
+
+    imgname = analysis.imgname;
+    fprintf(ctx.OutputHandle, '%s\t', imgname);
+
+    if (startsWith(imgname, 'sim') & ~startsWith(imgname, 'simerly_')) | ...
+        startsWith(imgname, 'rsfish_sim')
+        fprintf(ctx.OutputHandle, 'Sim\t');
+    else
+        fprintf(ctx.OutputHandle, 'Exp\t');
+    end
+
+    rstruct = analysis.results_hb;
+
+    X = rstruct.x_max - rstruct.x_min + 1;
+    Y = rstruct.y_max - rstruct.y_min + 1;
+    Z = rstruct.z_max - rstruct.z_min + 1;
+    totvox = X * Y * Z;
+    fprintf(ctx.OutputHandle, '%d\t', totvox);
+
+    minth = rstruct.th_scan_min;
+    fprintf(ctx.OutputHandle, '%d\t', minth);
+    spotcount = nnz(rstruct.callset{:, 'dropout_thresh'} >= minth);
+    fprintf(ctx.OutputHandle, '%d\t', spotcount);
+
+    logval = log10(totvox);
+    fprintf(ctx.OutputHandle, '%f\t', logval);
+    logval = log10(spotcount);
+    fprintf(ctx.OutputHandle, '%f\t', logval);
+
+    prop = spotcount/totvox;
+    fprintf(ctx.OutputHandle, '%f\n', prop);
 
 end
