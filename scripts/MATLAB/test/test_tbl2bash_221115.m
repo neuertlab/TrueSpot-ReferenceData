@@ -16,12 +16,16 @@ ClusterPyenvDir = '/home/hospelb/pyvenv';
 
 % ========================== Constants ==========================
 
-DETECT_THREADS = 4;
-RAM_PER_CORE = 4;
+DETECT_THREADS = 2;
+RAM_PER_CORE = 8;
 RAM_PER_CORE_BF = 16;
 HB_PARALLEL_HR = 6;
 HB_SERIAL_HR = 10;
 BF_SERIAL_HR = 14;
+
+MAX_PROJ = true;
+Z_MIN = 20;
+Z_MAX = 42;
 
 QUANT_SERIAL_HR = 6;
 QUANT_PARALLEL_HR = 4;
@@ -37,7 +41,7 @@ Z_TRIM = 0;
 BF_SOBJSZ = 10;
 BF_NUCSZ = 256;
 %BF_RESCALE = false;
-GAUSS_RAD = 3;
+GAUSS_RAD = 7;
 
 RUN_HB = true;
 RUN_BFNR = false;
@@ -57,7 +61,7 @@ InputTablePath = [DataDir filesep 'test_images.csv'];
 image_table = testutil_opentable(InputTablePath);
 
 %ImageName='scrna_E2R2I5_CTT1';
-GroupPrefix = 'simerly_';
+GroupPrefix = 'histonesc_';
 GroupSuffix = [];
 % ========================== Find Record ==========================
 addpath('./core');
@@ -165,6 +169,18 @@ for r = 1:rec_count
         printMatArg(script_hb, 'celltype', getTableValue(image_table, r, 'CELLTYPE'), true);
         printMatArg(script_hb, 'gaussrad', num2str(GAUSS_RAD), true);
 
+        if MAX_PROJ
+            printMatFlagArg(script_hb, 'maxzproj', true);
+        end
+
+        if Z_MIN > 0
+            printMatArg(script_hb, 'zmin', num2str(Z_MIN), true);
+        end
+
+        if Z_MAX > 0
+            printMatArg(script_hb, 'zmax', num2str(Z_MAX), true);
+        end
+
         if DETECT_THREADS > 1
             printMatArg(script_hb, 'threads', num2str(DETECT_THREADS), true);
         end
@@ -172,7 +188,7 @@ for r = 1:rec_count
         if startsWith(iname, 'sim_')
             printMatFlagArg(script_hb, 'nodpc', true);
         end
-        printMatFlagArg(script_hb, 'debug', true);
+        %printMatFlagArg(script_hb, 'debug', true);
 
         fprintf(script_hb, '); quit;"\n');
         fclose(script_hb);

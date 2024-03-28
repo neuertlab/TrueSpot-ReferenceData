@@ -11,7 +11,94 @@ classdef BigfishCompare
             csv_path = [dirpath filesep 'spots_' sprintf('%04d', thresh_val) '.csv'];
         end
 
-        function [coord_table, spot_table] = importBigFishCsvs(bfdir, output_stem, z_offset)
+        function [call_table, spot_table] = importBigFishCsvs(bfdir, output_stem, z_offset, idims)
+            %Figure out t range to preallocate.
+            t = 1;
+            filetblname = BigfishCompare.getCSVPath(bfdir, t);
+            while ~isfile(filetblname)
+                t = t+1;
+                filetblname = BigfishCompare.getCSVPath(bfdir, t);
+            end
+            tmin = t;
+            
+            while isfile(filetblname)
+                t = t+1;
+                filetblname = BigfishCompare.getCSVPath(bfdir, t);
+            end
+            tmax = t - 1;
+            T = tmax - tmin + 1;
+
+            %Preallocate structures
+            spot_table = zeros(T,2);
+            spot_table(:,1) = [tmin:1:tmax];
+
+            varNames = {'coord_1d' 'isnap_x' 'isnap_y' 'isnap_z' 'dropout_thresh'};
+            varTypes = {'uint32' 'uint16' 'uint16' 'uint16' 'single'};
+
+            %Read in lowest threshold...
+            filetblname = BigfishCompare.getCSVPath(bfdir, tmin);
+            raw_coord_table = uint16(csvread(filetblname));
+            spot_table(1,1) = t;
+            spot_table(1,2) = size(raw_coord_table,1);
+            scount = spot_table(1,2);
+
+            tcoords = uint16(zeros(scount,3));
+            tcoords(:,1) = raw_coord_table(:,3) + 1;
+            tcoords(:,2) = raw_coord_table(:,2) + 1;
+            tcoords(:,3) = raw_coord_table(:,1) + z_offset;
+            if isempty(idims)
+                %Tries to guess...
+                idims = struct();
+                idims.x = max(tcoords(:,1), [], 'all', 'omitnan');
+                idims.y = max(tcoords(:,2), [], 'all', 'omitnan');
+                idims.z = max(tcoords(:,3), [], 'all', 'omitnan');
+            end
+            table_size = [scount size(varNames,2)];
+            call_table = table('Size', table_size, 'VariableTypes',varTypes, 'VariableNames',varNames);
+            call_table{:,'isnap_x'} = tcoords(:,1);
+            call_table{:,'isnap_y'} = tcoords(:,2);
+            call_table{:,'isnap_z'} = tcoords(:,3);
+            call_table{:,'coord_1d'} = sub2ind([idims.y idims.x idims.z], tcoords(:,2), tcoords(:,1), tcoords(:,3));
+            call_table{:,'dropout_thresh'} = tmin;
+
+            i = 2;
+            for t = (tmin+1):tmax
+                filetblname = BigfishCompare.getCSVPath(bfdir, t);
+                if isfile(filetblname)
+                    
+                    %If it's empty, skip.
+                    finfo = dir(filetblname);
+                    if finfo.bytes < 1
+                        break;
+                    end
+                    
+                    %Load in.
+                    raw_coord_table = uint16(csvread(filetblname));
+                    spot_table(i,1) = t;
+                    spot_table(i,2) = size(raw_coord_table,1);
+                    scount = spot_table(i,2);
+        
+                    tcoords = uint16(zeros(scount,3));
+                    tcoords(:,1) = raw_coord_table(:,3) + 1;
+                    tcoords(:,2) = raw_coord_table(:,2) + 1;
+                    tcoords(:,3) = raw_coord_table(:,1) + z_offset;
+        
+                    c1d = sub2ind([idims.y idims.x idims.z], tcoords(:,2), tcoords(:,1), tcoords(:,3));
+                    matchidx = ismember(call_table{:,'coord_1d'}, c1d);
+                    if nnz(matchidx) > 0
+                        call_table{matchidx,'dropout_thresh'} = t;
+                    end
+                else
+                    break;
+                end
+                i = i+1;
+            end
+
+            save([output_stem '_callTable'], 'call_table', '-v7.3');
+            save([output_stem '_spotTable'], 'spot_table');
+        end
+
+        function [coord_table, spot_table] = importBigFishCsvs_old(bfdir, output_stem, z_offset)
             %Figure out t range to preallocate.
             t = 1;
             filetblname = BigfishCompare.getCSVPath(bfdir, t);
@@ -34,7 +121,7 @@ classdef BigfishCompare
             spot_table(:,1) = [tmin:1:tmax];
             
             %TODO It's complaining about something being out of bounds.
-            %WHAT that is, who the fuck knows
+            %WHAT that is, who the f knows
             %Import csvs
             i = 1;
             for t = tmin:tmax

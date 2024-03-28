@@ -5,7 +5,7 @@ function Main_Bigfish2Mat(input_dir, output_path)
     addpath('./core');
     addpath('./test');
     
-    versionStr = "2023.03.27.01";
+    versionStr = "2024.03.28.00";
     fprintf("Main_Bigfish2Mat | Version %s\n", versionStr);
     
 % ========================== Read Summary File ==========================
@@ -21,23 +21,19 @@ function Main_Bigfish2Mat(input_dir, output_path)
 % ========================== Import CSVs ==========================
 
     %Check if import needed...
-    filepath = [output_path '_coordTable.mat'];
+    filepath = [output_path '_callTable.mat'];
     fprintf("Checking for %s ...\n", filepath);
     if isfile(filepath)
         finfo = who('-file', filepath);
-        if ~isempty(find(ismember(finfo, 'coord_table'),1))
-            load(filepath, 'coord_table');
-            if ~isempty(coord_table)
-                ct_count = size(coord_table,1);
-                fprintf("Coord table contains entries for %d threshold values. No import needed!\n", ct_count);
-                clear coord_table;
-                return;
-            end
+        if ~isempty(find(ismember(finfo, 'call_table'),1))
+            fprintf("Call table already found. No import needed!\n");
+            return;
         end
     end
 
     fprintf("Importing Big-FISH output...\n");
-	[~, ~] = BigfishCompare.importBigFishCsvs(input_dir, output_path, zmin);
+	%[~, ~] = BigfishCompare.importBigFishCsvs(input_dir, output_path, zmin);
+    BigfishCompare.importBigFishCsvs(input_dir, output_path, zmin, []); %TODO New version of func takes idims!
     
 % ========================== Test ==========================
 
@@ -51,22 +47,33 @@ function Main_Bigfish2Mat(input_dir, output_path)
         fprintf("CHECK FAILED: Spot table file was not correctly exported.\n");
         return;
     end
-    
-    filepath = [output_path '_coordTable.mat'];
+
+    filepath = [output_path '_callTable.mat'];
     if isfile(filepath)
-        load(filepath, 'coord_table');
-        ct_count = size(coord_table,1);
-        fprintf("CHECK PASSED: Coord table contains entries for %d threshold values.\n", ct_count);
-        clear coord_table;
+        load(filepath, 'call_table');
+        s_count = size(call_table,1);
+        fprintf("CHECK PASSED: Call table contains entries for %d spots.\n", s_count);
+        clear call_table;
     else
         fprintf("CHECK FAILED: Coordinate table file was not correctly exported.\n");
         return;
     end
     
-    if st_count == ct_count
-        fprintf("CHECK PASSED: Spot and coordinate table sizes match.\n");
-    else
-        fprintf("CHECK FAILED: Spot and coordinate table sizes do not match!\n");
-    end
+%     filepath = [output_path '_coordTable.mat'];
+%     if isfile(filepath)
+%         load(filepath, 'coord_table');
+%         ct_count = size(coord_table,1);
+%         fprintf("CHECK PASSED: Coord table contains entries for %d threshold values.\n", ct_count);
+%         clear coord_table;
+%     else
+%         fprintf("CHECK FAILED: Coordinate table file was not correctly exported.\n");
+%         return;
+%     end
+%     
+%     if st_count == ct_count
+%         fprintf("CHECK PASSED: Spot and coordinate table sizes match.\n");
+%     else
+%         fprintf("CHECK FAILED: Spot and coordinate table sizes do not match!\n");
+%     end
     
 end
