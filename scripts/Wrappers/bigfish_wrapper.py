@@ -29,6 +29,7 @@ class BigfishRun:
         self.max_thresh = 400
         self.zkeep = 0.8
         self.dofit = False
+        self.is2D = False
         
 def parseDimArg(argstring):
     argstring = argstring.replace(" ","")
@@ -66,7 +67,7 @@ def getStackChannel(stack, chdim, chidx):
         return None
 
 def doBigfishRun(runparams):
-    print("BigFISH Wrapper Initialized! Version 23.04.11.00")
+    print("BigFISH Wrapper Initialized! Version 24.04.04.00")
     
     print("Input File:", runparams.inpath)
     print("Output Directory:", runparams.outpath)
@@ -79,8 +80,14 @@ def doBigfishRun(runparams):
         
     print("Minimum Scan Threshold:", runparams.min_thresh)
     print("Maximum Scan Threshold:", runparams.max_thresh)
-    print("Voxel Size:", runparams.voxel_sz[2], "x" , runparams.voxel_sz[1], "x", runparams.voxel_sz[0], "nanometers")
-    print("Point Size:", runparams.point_sz[2], "x" , runparams.point_sz[1], "x", runparams.point_sz[0], "nanometers")
+    
+    if runparams.is2D:
+        print("Pixel Size:", runparams.voxel_sz[1], "x", runparams.voxel_sz[0], "nanometers")
+        print("Point Size:", runparams.point_sz[1], "x", runparams.point_sz[0], "nanometers")        
+    else:
+        print("Voxel Size:", runparams.voxel_sz[2], "x" , runparams.voxel_sz[1], "x", runparams.voxel_sz[0], "nanometers")
+        print("Point Size:", runparams.point_sz[2], "x" , runparams.point_sz[1], "x", runparams.point_sz[0], "nanometers")        
+        
     print("CellSeg T:", runparams.cellseg_thresh)
     print("Small Object Size (NucSeg):", runparams.sobj_size_nuc)
     print("Target Size (NucSeg):", runparams.trgsize_nuc)
@@ -116,7 +123,7 @@ def doBigfishRun(runparams):
         ch_sample = imgstack
         ch_nuc = None
         ch_trans = None
-        
+
     if ch_sample is None:
         print("No sample provided! Exiting...")
         quit()
@@ -138,7 +145,7 @@ def doBigfishRun(runparams):
     elif runparams.zkeep > 1.0:
         runparams.zkeep = 1.0
     
-    if runparams.zkeep < 1.0:
+    if (runparams.zkeep < 1.0) and not runparams.is2D:
         print(getdtstr(), "Calculating focus scores...")
         focus_scored = bigfish.stack.compute_focus(ch_sample)
         print(getdtstr(), "Picking most in-focus z slices...")
@@ -148,7 +155,20 @@ def doBigfishRun(runparams):
         ch_sample = ch_sample[zmin:zmax+1,:,:]
     else:
         zmin = 0
-        zmax = ch_sample.shape[0];
+        if runparams.is2D:
+            zmax = 1
+        else:
+            zmax = ch_sample.shape[0]
+            
+    #Image dims
+    if runparams.is2D:
+        zdim = 1
+        ydim = ch_sample.shape[0]
+        xdim = ch_sample.shape[1]
+    else:
+        zdim = ch_sample.shape[0]
+        ydim = ch_sample.shape[1]
+        xdim = ch_sample.shape[2]            
     
     #Cellseg
     if (ch_nuc is not None) and (ch_trans is not None):
@@ -195,7 +215,10 @@ def doBigfishRun(runparams):
     
     #Doing steps separately to extract m-o-r-e-d-a-t-a
     print(getdtstr(), "Determining spot radius...")
-    log_factor = bigfish.detection.get_object_radius_pixel(voxel_size_nm=runparams.voxel_sz, object_radius_nm=runparams.point_sz, ndim=3) 
+    if runparams.is2D:
+        log_factor = bigfish.detection.get_object_radius_pixel(voxel_size_nm=runparams.voxel_sz, object_radius_nm=runparams.point_sz, ndim=2) 
+    else:
+        log_factor = bigfish.detection.get_object_radius_pixel(voxel_size_nm=runparams.voxel_sz, object_radius_nm=runparams.point_sz, ndim=3) 
     print(getdtstr(), "Applying LoG filter...")
     img_filtered = bigfish.stack.log_filter(ch_sample, sigma=log_factor)
     print(getdtstr(), "Detecting local maxima...")
@@ -232,6 +255,7 @@ def doBigfishRun(runparams):
         outfile.write("Z Range: " + str(zmin) + " - " + str(zmax) + "\n")
         outfile.write("Threshold: " + str(threshold) + "\n")
         outfile.write("LoG Factor: " + str(log_factor) + "\n")
+        outfile.write("Image Dimensions: " + str(xdim) + "," + str(ydim) + "," + str(zdim) + "\n")
       
     del(ch_sample)  
     del(img_filtered)
@@ -270,6 +294,9 @@ def main(args):
         runparams.dofit = True        
     if args.voxelsz:
         runparams.voxel_sz = parseDimArg(args.voxelsz)
+    if args.pixelsz:
+        runparams.voxel_sz = parseDimArg(args.pixelsz)
+        self.is2D = True
     if args.pointsz:
         runparams.point_sz = parseDimArg(args.pointsz)
         
@@ -287,7 +314,8 @@ if __name__ == "__main__":
     parser.add_argument("--minth", type=int, help="Minimum threshold to run explicit scan of (does not affect automated scan). (default: 10)")
     parser.add_argument("--maxth", type=int, help="Maximum threshold to run explicit scan of (does not affect automated scan). (default: 400)")
     parser.add_argument("--voxelsz", help="Voxel size in nm formatted 'z,y,x' (default: 300,65,65)")
-    parser.add_argument("--pointsz", help="Expected point size in nm formatted 'z,y,x' (default: 350,150,150)")
+    parser.add_argument("--pixelsz", help="Pixel size (for 2D image) in nm formatted 'y,x' (default: 65,65)")
+    parser.add_argument("--pointsz", help="Expected point size in nm formatted 'z,y,x' or 'y,x' (default: 350,150,150)")
     parser.add_argument("--csthresh", type=int, help="Value to use for cellseg thresh (default: 500)")
     parser.add_argument("--wsalpha", type=int, help="Watershed alpha to use for cellseg (default: 0.9)")
     parser.add_argument("--sobjsznuc", type=int, help="Nucleus small object size to use for nucleus segmentation (default: 2000)")
