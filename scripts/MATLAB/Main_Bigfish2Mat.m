@@ -14,7 +14,7 @@ function Main_Bigfish2Mat(input_dir, output_path)
     if ~isfile(summary_file_path)
         return;
     end
-	[zmin, zmax, bfthresh] = BigfishCompare.readSummaryTxt(summary_file_path);
+	[zmin, zmax, bfthresh, idims] = BigfishCompare.readSummaryTxt(summary_file_path);
 	fprintf("Z Range: %d - %d\n", zmin, zmax);
 	fprintf("BF Threshold: %d\n", bfthresh);
     
@@ -33,7 +33,7 @@ function Main_Bigfish2Mat(input_dir, output_path)
 
     fprintf("Importing Big-FISH output...\n");
 	%[~, ~] = BigfishCompare.importBigFishCsvs(input_dir, output_path, zmin);
-    BigfishCompare.importBigFishCsvs(input_dir, output_path, zmin, []); %TODO New version of func takes idims!
+    BigfishCompare.importBigFishCsvs(input_dir, output_path, zmin, idims); %TODO New version of func takes idims!
     
 % ========================== Test ==========================
 

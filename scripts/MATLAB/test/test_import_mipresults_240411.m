@@ -36,7 +36,8 @@ DEADPIX_WORKDIR = './bgh_old';
 
 RS_TH_IVAL = 0.1/250;
 SCRIPT_VER = 'v24.04.11.00';
-COMPUTER_NAME = 'CHROMAT_WIN';
+%COMPUTER_NAME = 'CHROMAT_WIN';
+COMPUTER_NAME = 'VU_NEUERTLAB_HOSPELB';
 
 EXPTS_INITIALS = 'BH';
 
@@ -116,6 +117,16 @@ for r = START_INDEX:END_INDEX
         end
     end
 
+    %Load cellseg (if applicable)
+    cell_mask = [];
+    cellSegDir = [BaseDir filesep replace(getTableValue(image_table, r, 'CELLSEG_DIR'), '/', filesep)];
+    cellSegSuffix = getTableValue(image_table, r, 'CELLSEG_SFX');
+    if ~strcmp(cellSegDir, '.')
+        cellSegPath = [cellSegDir 'Lab_' cellSegSuffix '.mat'];
+        cell_mask = CellSeg.openCellMask(cellSegPath);
+    end
+    
+
     if DO_HOMEBREW
         hb_stem_base = getTableValue(image_table, r, 'OUTSTEM');
         hb_stem = [BaseDir replace(hb_stem_base, '/', filesep)];
@@ -147,8 +158,17 @@ for r = START_INDEX:END_INDEX
             rstruct.y_min = YTRIM + 1;
             rstruct.y_max = idims.y - YTRIM;
 
-            %Load threshold info TODO
-            th_val = 0; %TODO!!
+            %Load threshold info
+            th_val = 0;
+            spotsrun = RNASpotsRun.loadFrom(hb_stem);
+            if ~isempty(spotsrun)
+                rstruct.threshold = spotsrun.intensity_threshold;
+                rstruct.threshold_details = spotsrun.threshold_results;
+                th_val = rstruct.threshold;
+            else
+                rstruct.threshold = 0;
+                rstruct.threshold_details = [];
+            end
 
             %Compare to reference, if applicable
             if ~isempty(myref)
@@ -180,19 +200,19 @@ for r = START_INDEX:END_INDEX
             end
 
             %Cell seg (if applicable)
-            %TODO!!
-
+            if ~isempty(cell_mask)
+                rstruct.callset = RNACoords.applyCellSegMask(rstruct.callset, cell_mask);
+            end
 
             analysis.results_hb.(mipFieldName) = rstruct;
         end
-        
-        %TODO
     end
 
     if DO_BIGFISH
         %TODO
     end
 
+    save(ResFilePath, 'analysis', '-v7.3');
 end
 
 % ========================== Helper Functions ==========================

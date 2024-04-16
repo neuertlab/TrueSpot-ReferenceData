@@ -24,8 +24,8 @@ HB_SERIAL_HR = 10;
 BF_SERIAL_HR = 14;
 
 MAX_PROJ = true;
-Z_MIN = 20;
-Z_MAX = 42;
+Z_MIN = 0;
+Z_MAX = 0;
 
 QUANT_SERIAL_HR = 6;
 QUANT_PARALLEL_HR = 4;
@@ -61,7 +61,7 @@ InputTablePath = [DataDir filesep 'test_images.csv'];
 image_table = testutil_opentable(InputTablePath);
 
 %ImageName='scrna_E2R2I5_CTT1';
-GroupPrefix = 'histonesc_';
+GroupPrefix = 'sctc_';
 GroupSuffix = [];
 % ========================== Find Record ==========================
 addpath('./core');

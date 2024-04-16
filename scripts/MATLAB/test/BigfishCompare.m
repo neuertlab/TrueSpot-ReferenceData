@@ -3,6 +3,9 @@
 
 classdef BigfishCompare
 
+    %TODO: Have summary parser return idims
+    %TODO: 2D csvs only have y and x columns
+
     methods (Static)
         
         % ========================== Process ==========================
@@ -41,11 +44,20 @@ classdef BigfishCompare
             spot_table(1,1) = t;
             spot_table(1,2) = size(raw_coord_table,1);
             scount = spot_table(1,2);
+            dimcount = size(raw_coord_table, 2);
 
             tcoords = uint16(zeros(scount,3));
-            tcoords(:,1) = raw_coord_table(:,3) + 1;
-            tcoords(:,2) = raw_coord_table(:,2) + 1;
-            tcoords(:,3) = raw_coord_table(:,1) + z_offset;
+
+            if dimcount == 3
+                tcoords(:,1) = raw_coord_table(:,3) + 1;
+                tcoords(:,2) = raw_coord_table(:,2) + 1;
+                tcoords(:,3) = raw_coord_table(:,1) + z_offset;
+            elseif dimcount == 2
+                tcoords(:,1) = raw_coord_table(:,2) + 1;
+                tcoords(:,2) = raw_coord_table(:,1) + 1;
+                tcoords(:,3) = z_offset;
+            end
+            
             if isempty(idims)
                 %Tries to guess...
                 idims = struct();
@@ -77,11 +89,18 @@ classdef BigfishCompare
                     spot_table(i,1) = t;
                     spot_table(i,2) = size(raw_coord_table,1);
                     scount = spot_table(i,2);
+                    dimcount = size(raw_coord_table, 2);
         
                     tcoords = uint16(zeros(scount,3));
-                    tcoords(:,1) = raw_coord_table(:,3) + 1;
-                    tcoords(:,2) = raw_coord_table(:,2) + 1;
-                    tcoords(:,3) = raw_coord_table(:,1) + z_offset;
+                    if dimcount == 3
+                        tcoords(:,1) = raw_coord_table(:,3) + 1;
+                        tcoords(:,2) = raw_coord_table(:,2) + 1;
+                        tcoords(:,3) = raw_coord_table(:,1) + z_offset;
+                    elseif dimcount == 2
+                        tcoords(:,1) = raw_coord_table(:,2) + 1;
+                        tcoords(:,2) = raw_coord_table(:,1) + 1;
+                        tcoords(:,3) = z_offset;
+                    end
         
                     c1d = sub2ind([idims.y idims.x idims.z], tcoords(:,2), tcoords(:,1), tcoords(:,3));
                     matchidx = ismember(call_table{:,'coord_1d'}, c1d);
@@ -246,18 +265,29 @@ classdef BigfishCompare
             end
         end
         
-        function [zmin, zmax, bfthresh] = readSummaryTxt(filepath)
+        function [zmin, zmax, bfthresh, idims] = readSummaryTxt(filepath)
+            idims = struct('x', 1, 'y', 1, 'z', 1);
+
             %fgetl
             fhandle = fopen(filepath);
             line = fgetl(fhandle);
             sspl = split(line, ':');
             sspl = split(sspl{2}, '-');
             zmin = str2num(strtrim(sspl{1})) + 1;
-            zmax = str2num(strtrim(sspl{2}));
+            zmax = str2num(strtrim(sspl{2})); %Exclusive 0-based. So -1+1.
 
             line = fgetl(fhandle);
             sspl = split(line, ':');
             bfthresh = round(str2num(strtrim(sspl{2})));
+
+            fgetl(fhandle); %Skip LOG factor
+            line = fgetl(fhandle);
+            sspl = split(line, ':');
+            sspl = split(strtrim(sspl{2}), ',');
+            idims.x = str2num(sspl{1});
+            idims.y = str2num(sspl{2});
+            idims.z = str2num(sspl{3});
+
             fclose(fhandle);
         end
         
