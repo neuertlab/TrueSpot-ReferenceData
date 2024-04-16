@@ -14,7 +14,7 @@ addpath('./test');
 
 % ========================== Constants ==========================
 
-ROW_INDEX = 263;
+ROW_INDEX =  76;
 
 DUMP_SPOTCOUNTS_NOLOG = true;
 DUMP_SPOTCOUNTS = true;
