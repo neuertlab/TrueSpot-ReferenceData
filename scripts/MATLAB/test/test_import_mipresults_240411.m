@@ -14,8 +14,8 @@ addpath('./test');
 
 % ========================== Constants ==========================
 
-START_INDEX = 75;
-END_INDEX = 272;
+START_INDEX = 69;
+END_INDEX = 122;
 
 DO_HOMEBREW = true;
 DO_BIGFISH = false;
@@ -36,8 +36,8 @@ DEADPIX_WORKDIR = './bgh_old';
 
 RS_TH_IVAL = 0.1/250;
 SCRIPT_VER = 'v24.04.11.00';
-%COMPUTER_NAME = 'CHROMAT_WIN';
-COMPUTER_NAME = 'VU_NEUERTLAB_HOSPELB';
+COMPUTER_NAME = 'CHROMAT_WIN';
+%COMPUTER_NAME = 'VU_NEUERTLAB_HOSPELB';
 
 EXPTS_INITIALS = 'BH';
 
@@ -100,8 +100,8 @@ for r = START_INDEX:END_INDEX
 
             myref.timestamp = datetime;
             if isfield(myref, 'truthset_region')
-                myref = rmfield(myref, 'z0');
-                myref = rmfield(myref, 'z1');
+                myref.truthset_region = rmfield(myref.truthset_region, 'z0');
+                myref.truthset_region = rmfield(myref.truthset_region, 'z1');
             end
 
             zz_min = max(1, z_min - FILTER_Z_RAD);
@@ -122,7 +122,7 @@ for r = START_INDEX:END_INDEX
     cellSegDir = [BaseDir filesep replace(getTableValue(image_table, r, 'CELLSEG_DIR'), '/', filesep)];
     cellSegSuffix = getTableValue(image_table, r, 'CELLSEG_SFX');
     if ~strcmp(cellSegDir, '.')
-        cellSegPath = [cellSegDir 'Lab_' cellSegSuffix '.mat'];
+        cellSegPath = [cellSegDir filesep 'Lab_' cellSegSuffix '.mat'];
         cell_mask = CellSeg.openCellMask(cellSegPath);
     end
     
@@ -165,6 +165,18 @@ for r = START_INDEX:END_INDEX
                 rstruct.threshold = spotsrun.intensity_threshold;
                 rstruct.threshold_details = spotsrun.threshold_results;
                 th_val = rstruct.threshold;
+
+                if isempty(rstruct.threshold_details)
+                    %Try rethresh
+                    fprintf('\t> Thresholding did not run. Trying now...');
+                    spot_table = RNAUtils.spotTableFromCallTable(call_table, true);
+                    threshold_results = RNAThreshold.runSavedParameters(spotsrun, 1, spot_table, []);
+
+                    rstruct.threshold_details = threshold_results;
+                    rstruct.threshold = threshold_results.threshold;
+                    th_val = rstruct.threshold;
+                end
+
             else
                 rstruct.threshold = 0;
                 rstruct.threshold_details = [];
@@ -219,7 +231,7 @@ end
 
 function pathstem = getHBStem(hbstem_default, minZ, maxZ)
     hbstem = replace(hbstem_default, 'preprocess', ['preprocess' filesep 'maxproj']);
-    hbstem = replace(hbstem, '_all_3d_', '_max_proj_');
+    hbstem = replace(hbstem, '_all_3d', '_max_proj');
 
     %Get group name dir
     pparts = split(hbstem, filesep);
