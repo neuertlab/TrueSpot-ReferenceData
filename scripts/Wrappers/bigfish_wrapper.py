@@ -67,7 +67,7 @@ def getStackChannel(stack, chdim, chidx):
         return None
 
 def doBigfishRun(runparams):
-    print("BigFISH Wrapper Initialized! Version 24.04.04.00")
+    print("BigFISH Wrapper Initialized! Version 24.04.17.00")
     
     print("Input File:", runparams.inpath)
     print("Output Directory:", runparams.outpath)
@@ -296,7 +296,7 @@ def main(args):
         runparams.voxel_sz = parseDimArg(args.voxelsz)
     if args.pixelsz:
         runparams.voxel_sz = parseDimArg(args.pixelsz)
-        self.is2D = True
+        runparams.is2D = True
     if args.pointsz:
         runparams.point_sz = parseDimArg(args.pointsz)
         
