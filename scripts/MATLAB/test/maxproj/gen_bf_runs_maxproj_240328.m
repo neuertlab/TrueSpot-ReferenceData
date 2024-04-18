@@ -15,11 +15,12 @@ ClusterScriptsDir = '/nobackup/p_neuert_lab/hospelb/scripts';
 ClusterPyenvDir = '/home/hospelb/pyvenv';
 
 addpath('./core');
+addpath('./test');
 % ========================== Constants ==========================
 
 DETECT_THREADS = 2;
 RAM_PER_CORE = 16;
-SERIAL_HR = 14;
+SERIAL_HR = 6;
 
 %For finding file
 Z_MIN = 20;
@@ -61,6 +62,8 @@ script_master = fopen([ScriptDir filesep 'runall_bf_mip.sh'], 'w');
 fprintf(script_master, '#!/bin/bash\n\n');
 fprintf(script_master, 'SCRIPTDIR=%s\n', ClusterSlurmDir);
 
+rec_count = size(image_table, 1);
+
 for r = 1:rec_count
     iname = getTableValue(image_table, r, 'IMGNAME');
     
@@ -94,7 +97,7 @@ for r = 1:rec_count
 
     %Script
     scriptFileName = [iname '_bf_mip.sh'];
-    script_file = fopen([ScriptDir scriptFileName], 'w');
+    script_file = fopen([ScriptDir filesep scriptFileName], 'w');
 
     fprintf(script_file, '#!/bin/bash\n\n');
     fprintf(script_file, 'module load GCC/6.4.0-2.28\n');
@@ -104,31 +107,25 @@ for r = 1:rec_count
     fprintf(script_file, 'python3 %s/bigfish_wrapper.py "%s" "%s"', ClusterScriptsDir, mipiPath, resOutDir);
 
     %- BF Options
-    fprintf(script_file, ' --ch_dapi %d', getTableValue(image_table, r, 'CH_DAPI'));
-    fprintf(script_file, ' --ch_light %d', getTableValue(image_table, r, 'CH_LIGHT'));
-    fprintf(script_file, ' --ch_target %d', getTableValue(image_table, r, 'CHANNEL'));
+    fprintf(script_file, ' --ch_target 1');
     fprintf(script_file, ' --minth 10');
     fprintf(script_file, ' --maxth 1000');
 
-    %TODO (Need to update BF wrapper): Remove Z for this.
-    vx = getTableValue(script_file, r, 'VOXEL_X');
-    vy = getTableValue(script_file, r, 'VOXEL_Y');
-    vz = getTableValue(script_file, r, 'VOXEL_Z');
-    fprintf(script_bfrs, ' --voxelsz "(%d,%d,%d)"', vz,vy,vx);
-    px = getTableValue(script_file, r, 'POINT_X');
-    py = getTableValue(script_file, r, 'POINT_Y');
-    pz = getTableValue(script_file, r, 'POINT_Z');
+    vx = getTableValue(image_table, r, 'VOXEL_X');
+    vy = getTableValue(image_table, r, 'VOXEL_Y');
+    fprintf(script_file, ' --pixelsz "(%d,%d)"', vy,vx);
+    px = getTableValue(image_table, r, 'POINT_X');
+    py = getTableValue(image_table, r, 'POINT_Y');
 
     px = max(vx,px);
     py = max(vy,py);
-    pz = max(vz,pz);
-    fprintf(script_file, ' --pointsz "(%d,%d,%d)"', pz,py,px);
-    clear px py pz vx vy vz
+    fprintf(script_file, ' --pointsz "(%d,%d)"', py,px);
+    clear px py vx vy
 
     fprintf(script_file, ' --zkeep 1.0');
     fprintf(script_file, ' --gaussfit');
 
-    bfStem = [resOutDir '/' iname 'bf_mip_'];
+    bfStem = [resOutDir '/' iname '_bf_mip'];
     fprintf(script_file, '\ndeactivate\n\n');
     fprintf(script_file, 'module load %s\n', MODULE_NAME);
     fprintf(script_file, 'cd %s\n', MATLAB_DIR);
@@ -177,7 +174,7 @@ fclose(script_master);
 % ========================== Helper Functions ==========================
 
 function val = getTableValue(mytable, row_index, field)
-    val = mytable{row_index,field};
+    val = mytable{row_index, field};
     if iscell(val)
         val = val{1,1};
     end
