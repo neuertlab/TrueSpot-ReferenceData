@@ -23,8 +23,8 @@ RAM_PER_CORE = 16;
 SERIAL_HR = 6;
 
 %For finding file
-Z_MIN = 20;
-Z_MAX = 42;
+Z_MIN = 10;
+Z_MAX = 16;
 
 TH_MIN_BF = 10;
 OVERWRITE = false;
@@ -42,9 +42,9 @@ InputTablePath = [DataDir filesep 'test_images.csv'];
 image_table = testutil_opentable(InputTablePath);
 
 %ImageName='scrna_E2R2I5_CTT1';
-GroupPrefix = 'histonesc_';
+GroupPrefix = 'sctc_';
 GroupSuffix = [];
-GroupOutDir = 'histonesc';
+GroupOutDir = 'sctc';
 
 % ========================== Param Adjust ==========================
 
