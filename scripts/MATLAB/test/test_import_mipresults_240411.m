@@ -14,8 +14,8 @@ addpath('./test');
 
 % ========================== Constants ==========================
 
-START_INDEX = 69;
-END_INDEX = 122;
+START_INDEX = 243;
+END_INDEX = 272;
 
 DO_HOMEBREW = true;
 DO_BIGFISH = false;
@@ -35,7 +35,7 @@ OutputDir = [BaseDir filesep 'data' filesep 'results'];
 DEADPIX_WORKDIR = './bgh_old';
 
 RS_TH_IVAL = 0.1/250;
-SCRIPT_VER = 'v24.04.11.00';
+SCRIPT_VER = 'v24.05.06.00';
 COMPUTER_NAME = 'CHROMAT_WIN';
 %COMPUTER_NAME = 'VU_NEUERTLAB_HOSPELB';
 
@@ -128,9 +128,14 @@ for r = START_INDEX:END_INDEX
     
 
     if DO_HOMEBREW
-        hb_stem_base = getTableValue(image_table, r, 'OUTSTEM');
-        hb_stem = [BaseDir replace(hb_stem_base, '/', filesep)];
-        hb_stem = getHBStem(hb_stem, Z_MIN, Z_MAX);
+        %hb_stem_base = getTableValue(image_table, r, 'OUTSTEM');
+        %hb_stem = [BaseDir replace(hb_stem_base, '/', filesep)];
+        %hb_stem = getHBStem(hb_stem, Z_MIN, Z_MAX);
+        tiffPath = getTableValue(image_table, r, 'IMAGEPATH');
+        [~,tifName, ~] = fileparts(tiffPath);
+        trgName = getTableValue(image_table, r, 'TARGET');
+        hb_stem = getHBStem(BaseDir, myname, trgName, tifName, Z_MIN, Z_MAX);
+        clear tiffPath tifName trgName
 
         %Read tool output
         callTablePath = [hb_stem '_callTable.mat'];
@@ -184,7 +189,86 @@ for r = START_INDEX:END_INDEX
 
             %Compare to reference, if applicable
             if ~isempty(myref)
-                [call_table, ref_assign] = RNACoords.updateTFCalls2D(call_table, myref.exprefset, SNAP_RAD, 10);
+                [call_table, ref_assign] = RNACoords.updateTFCalls2D(call_table, myref.exprefset, SNAP_RAD, 25);
+                rstruct.callset = call_table;
+
+                %Calculate performance metrics
+                pstruct = struct();
+                pstruct.name = EXPTS_INITIALS;
+                pstruct.ref_call_map = ref_assign;
+
+                %Update trimming flags in table
+                if isfield(myref, 'truthset_region')
+                    [rstruct.callset, ~] = AnalysisFiles.applyTruthRegionMask(myref.truthset_region, rstruct.callset, idims, true);
+                else
+                    rstruct.callset{:,'in_truth_region'} = true;
+                end
+                [rstruct, ~] = AnalysisFiles.updateCallsetTrimRes(rstruct, idims, true);
+
+                %Update metrics
+                pstruct = AnalysisFiles.calculatePerformanceMetrics(rstruct.callset, th_val, pstruct);
+
+                pstruct.timestamp = datetime;
+
+                if isfield(rstruct, 'benchmarsk')
+                    %Oops lol
+                    rstruct = rmfield(rstruct, 'benchmarsk');
+                end
+                if ~isfield(rstruct, 'benchmarks')
+                    rstruct.benchmarks = struct();
+                end
+                rstruct.benchmarks.(EXPTS_INITIALS) = pstruct;
+            end
+
+            %Cell seg (if applicable)
+            if ~isempty(cell_mask)
+                rstruct.callset = RNACoords.applyCellSegMask(rstruct.callset, cell_mask);
+            end
+
+            analysis.results_hb.(mipFieldName) = rstruct;
+        else
+            fprintf('\t> TrueSpot output data was not found. Skipping...\n');
+        end
+    end
+
+    if DO_BIGFISH
+        bf_stem = getBFStem(image_table, r, mipFieldName);
+        bf_stem = [BaseDir replace(bf_stem, '/', filesep)];
+        [bf_dir, ~, ~] = fileparts(bf_stem);
+
+        callTablePath = [bf_stem '_callTable.mat'];
+        if isfile(callTablePath)
+            load(callTablePath, 'call_table');
+
+            if ~isfield(analysis, 'results_bf')
+                analysis.results_bf = struct();
+            end
+
+            rstruct = struct();
+
+            %Metadata (timestamp, version etc)
+            rstruct.importMeta = struct();
+            rstruct.importMeta.timestamp = datetime;
+            rstruct.importMeta.scriptVersion = SCRIPT_VER;
+            rstruct.importMeta.importComputer = COMPUTER_NAME;
+
+            rstruct.callset = call_table;
+            rstruct.z_min = z_min;
+            rstruct.z_max = z_max;
+
+            rstruct.x_min = XTRIM + 1;
+            rstruct.x_max = idims.x - XTRIM;
+            rstruct.y_min = YTRIM + 1;
+            rstruct.y_max = idims.y - YTRIM;
+
+            %Load threshold info
+            summary_path = [bf_dir filesep 'summary.txt'];
+            [~, ~, th_val, ~] = BigfishCompare.readSummaryTxt(summary_path);
+            rstruct.threshold = th_val;
+
+            %Compare to reference, if applicable
+            if ~isempty(myref)
+                [call_table, ref_assign] = RNACoords.updateTFCalls2D(call_table, myref.exprefset, SNAP_RAD, 25);
                 rstruct.callset = call_table;
 
                 %Calculate performance metrics
@@ -206,7 +290,7 @@ for r = START_INDEX:END_INDEX
                 pstruct.timestamp = datetime;
 
                 if ~isfield(rstruct, 'benchmarks')
-                    rstruct.benchmarsk = struct();
+                    rstruct.benchmarks = struct();
                 end
                 rstruct.benchmarks.(EXPTS_INITIALS) = pstruct;
             end
@@ -216,33 +300,53 @@ for r = START_INDEX:END_INDEX
                 rstruct.callset = RNACoords.applyCellSegMask(rstruct.callset, cell_mask);
             end
 
-            analysis.results_hb.(mipFieldName) = rstruct;
+            analysis.results_bf.(mipFieldName) = rstruct;
+        else
+            fprintf('\t> Big-FISH output data was not found. Skipping...\n');
         end
-    end
 
-    if DO_BIGFISH
-        %TODO
     end
 
     save(ResFilePath, 'analysis', '-v7.3');
+    clear analysis
 end
 
 % ========================== Helper Functions ==========================
 
-function pathstem = getHBStem(hbstem_default, minZ, maxZ)
-    hbstem = replace(hbstem_default, 'preprocess', ['preprocess' filesep 'maxproj']);
-    hbstem = replace(hbstem, '_all_3d', '_max_proj');
+function pathstem = getBFStem(mytable, row_index, mipFieldName)
+    pathstem = '/data/bigfish/maxproj';
+    myName = getTableValue(mytable, row_index, 'IMGNAME');
+    tifPath = getTableValue(mytable, row_index, 'IMAGEPATH');
 
-    %Get group name dir
-    pparts = split(hbstem, filesep);
-    pcount = size(pparts, 1);
-    groupdir = [];
-    for i = 1:(pcount-1)
-        if strcmp(pparts{i,1}, 'maxproj')
-            groupdir = pparts{i+1,1};
-            break;
-        end
+    sspl = split(myName, '_');
+    pieceCount = size(sspl, 1);
+    groupName = sspl{1,1};
+    iName = '';
+    for i = 2:pieceCount-1
+        if i > 2; iName = [iName '_']; end
+        iName = [iName sspl{i,1}];
     end
+
+    myTarget = getTableValue(mytable, row_index, 'TARGET');
+    [~, tifName, ~] = fileparts(tifPath);
+
+    pathstem = [pathstem '/' groupName '/' mipFieldName '/' tifName '/' myTarget '/' myName '_bf_mip'];
+end
+
+function pathstem = getHBStem(baseDir, iName, targetName, tifName, minZ, maxZ)
+%     hbstem = replace(hbstem_default, 'preprocess', ['preprocess' filesep 'maxproj']);
+%     hbstem = replace(hbstem, '_all_3d', '_max_proj');
+% 
+%     %Get group name dir
+%     pparts = split(hbstem, filesep);
+%     pcount = size(pparts, 1);
+%     groupdir = [];
+%     for i = 1:(pcount-1)
+%         if strcmp(pparts{i,1}, 'maxproj')
+%             groupdir = pparts{i+1,1};
+%             break;
+%         end
+%     end
 
     zminstr = '1';
     if minZ > 0
@@ -253,8 +357,14 @@ function pathstem = getHBStem(hbstem_default, minZ, maxZ)
         zmaxstr = num2str(maxZ);
     end
 
+    pparts = split(iName, '_');
+    groupDir = pparts{1,1};
+
     zdir = [zminstr '_' zmaxstr];
-    pathstem = replace(hbstem, groupdir, [groupdir filesep zdir]);
+%     pathstem = replace(hbstem, groupdir, [groupdir filesep zdir]);
+    pathstem = [baseDir filesep 'data' filesep 'preprocess' filesep ...
+        'maxproj' filesep groupDir filesep zdir filesep tifName filesep ...
+        targetName filesep iName];
 end
 
 function dirname = getSetOutputDirName(imgname)

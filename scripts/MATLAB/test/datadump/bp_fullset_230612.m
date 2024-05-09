@@ -18,7 +18,7 @@ scriptCtx = genScriptContextStruct(BaseDir);
 scriptCtx.ImgProcDir = ImgProcDir;
 scriptCtx.ImgDir = ImgDir;
 
-scriptCtx.DateSuffix = '240327';
+scriptCtx.DateSuffix = '240503';
 scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
 
 % ========================== Parameters ==========================
@@ -74,11 +74,12 @@ scriptCtx = finalize(scriptCtx);
 
 function ctx = initialize(ctx)
     %TODO fill in action here.
-    %ctx = openThOutput(ctx);
+    ctx = openThOutput(ctx);
 
     %ctx = open_sctcOutput(ctx);
-    ctx = openExpDumpOutput(ctx);
+    %ctx = openExpDumpOutput(ctx);
     %ctx = openCountDumpOutput(ctx);
+    %ctx = openThPresetCompareOutput(ctx, 11);
 
     %ctx = open_sctcSimCountOutput(ctx);
 
@@ -99,10 +100,10 @@ end
 
 function doTheThing(ctx, analysis)
     %TODO fill in action here.
-    %Dump_ThreshTable(ctx.OutputHandle, analysis);
+    Dump_ThreshTable(ctx.OutputHandle, analysis);
 
     %do_sctcIndiv(ctx, analysis);
-    Dump_expResultStats(ctx.OutputHandle, analysis, 'BH');
+    %Dump_expResultStats(ctx.OutputHandle, analysis, 'BH');
 
     %dumpCountsIndiv(ctx, analysis);
 
@@ -111,10 +112,12 @@ function doTheThing(ctx, analysis)
 %     [analysis, ~] = AnalysisFiles.activateExpRefSet(analysis, 'BHImaris');
 %     save(ctx.ResultsPath, 'analysis');
 
+    %doThPresetScan(ctx, analysis, 11);
+
     %Dump_JustCoords_231128(analysis, [ctx.coords_dir filesep analysis.imgname '_calls.mat']);
     %analysis = plotbug_correct_240214(analysis);
-%     analysis = rethresh_all_240219(analysis);
-%     save(ctx.ResultsPath, 'analysis');
+%       analysis = rethresh_all_240219(analysis, true);
+%       save(ctx.ResultsPath, 'analysis');
 
     %Look for truthset
 %     if isfield(analysis, 'simkey') | isfield(analysis, 'exprefset')
@@ -136,11 +139,13 @@ function bool_res = shouldSkip(imgName)
 %         bool_res = true;
 %     end
 
-    if startsWith(imgName, 'sim_'); bool_res = true; end
-    if startsWith(imgName, 'simvar_'); bool_res = true; end
-    if startsWith(imgName, 'simvarmass_'); bool_res = true; end
-    if startsWith(imgName, 'simneg_'); bool_res = true; end
-    if startsWith(imgName, 'rsfish_sim'); bool_res = true; end
+%     if startsWith(imgName, 'sim_'); bool_res = true; end
+%     if startsWith(imgName, 'simvar_'); bool_res = true; end
+%     if startsWith(imgName, 'simvarmass_'); bool_res = true; end
+%     if startsWith(imgName, 'simneg_'); bool_res = true; end
+%     if startsWith(imgName, 'rsfish_sim'); bool_res = true; end
+
+    %bool_res = ~bool_res;
 end
 
 function ctx = genScriptContextStruct(basedir)
@@ -183,6 +188,28 @@ function val = getTableValue(mytable, row_index, field)
 end
 
 % ========================== Dump Functions ==========================
+
+function ctx = openThPresetCompareOutput(ctx, presetCount)
+    outpath = [ctx.OutputDir filesep 'thPresetCompare_' ctx.DateSuffix '.tsv'];
+    ctx.OutputHandle = fopen(outpath, 'w');
+
+    outfields = {'THVAL' 'SPOTCOUNT' 'FSCORE'};
+    field_count = size(outfields, 2);
+
+    fprintf(ctx.OutputHandle, '#IMAGE\t');
+    for i = 1:field_count
+        if i > 1; fprintf(ctx.OutputHandle, '\t'); end
+        fprintf(ctx.OutputHandle, 'FPEAK_%s', outfields{i});
+    end
+
+    for p = 1:presetCount
+        for i = 1:field_count
+            if i > 1; fprintf(ctx.OutputHandle, '\t'); end
+            fprintf(ctx.OutputHandle, 'P%02d_%s', p, outfields{i});
+        end
+    end
+    fprintf(ctx.OutputHandle, '\n');
+end
 
 function ctx = openExpDumpOutput(ctx)
     outpath = [ctx.OutputDir filesep 'expBHStatsDump_' ctx.DateSuffix '.tsv'];
@@ -299,6 +326,118 @@ function ctx = close_sctcOutput(ctx)
     fclose(ctx.MultiOutputHandle.celltbl);
     fclose(ctx.MultiOutputHandle.maintbl);
     fclose(ctx.MultiOutputHandle.simtbl);
+end
+
+function ctx = doThPresetScan(ctx, analysis, presetCount)
+    imgname = analysis.imgname;
+
+    if ~isfield(analysis, 'results_hb')
+        return;
+    end
+
+    is_sim = false;
+    if contains(imgname, 'sim')
+        if ~startsWith(imgname, 'simerly_')
+            is_sim = true;
+        end
+    end
+
+    fprintf(ctx.OutputHandle, '%s\t', imgname);
+    tsname = 'BH';
+
+    %Get F-score peak (if applicable)
+    bstruct = [];
+    if is_sim
+        bstruct = analysis.results_hb;
+    else
+        if isfield(analysis.results_hb, 'benchmarks')
+            if isfield(analysis.results_hb.benchmarks, tsname)
+                bstruct = analysis.results_hb.benchmarks.(tsname);
+            else
+                if isfield(analysis.results_hb.benchmarks, 'BHImaris')
+                    bstruct = analysis.results_hb.benchmarks.BHImaris;
+                end
+            end
+        end
+    end
+
+    if ~isempty(bstruct)
+        if isfield(bstruct, 'fscore_peak_trimmed')
+            [~, maxidx] = max(bstruct.performance_trimmed{:, 'fScore'}, [], 'all', 'omitnan');
+            fprintf(ctx.OutputHandle, '%d\t', bstruct.performance_trimmed{maxidx, 'thresholdValue'});
+            fprintf(ctx.OutputHandle, '%d\t', bstruct.performance_trimmed{maxidx, 'spotCount'});
+            fprintf(ctx.OutputHandle, '%.5f', bstruct.performance_trimmed{maxidx, 'fScore'});
+        elseif isfield(bstruct, 'fscore_peak')
+            [~, maxidx] = max(bstruct.performance{:, 'fScore'}, [], 'all', 'omitnan');
+            fprintf(ctx.OutputHandle, '%d\t', bstruct.performance{maxidx, 'thresholdValue'});
+            fprintf(ctx.OutputHandle, '%d\t', bstruct.performance{maxidx, 'spotCount'});
+            fprintf(ctx.OutputHandle, '%.5f', bstruct.performance{maxidx, 'fScore'});
+        else
+            fprintf(ctx.OutputHandle, 'NaN\tNaN\tNaN');
+        end
+    else
+        fprintf(ctx.OutputHandle, 'NaN\tNaN\tNaN');
+    end
+
+    for pre = 1:presetCount
+        if is_sim
+            analysis = AnalysisFiles.rethresholdSim(analysis, pre, 1, false);
+
+            %Dump to table
+            fprintf(ctx.OutputHandle, '\t%d', analysis.results_hb.threshold);
+            if (analysis.results_hb.threshold > 0)
+                spots = nnz(analysis.results_hb.callset{:, 'dropout_thresh'} >= analysis.results_hb.threshold);
+                fprintf(ctx.OutputHandle, '\t%d', spots);
+                
+                if isfield(analysis.results_hb, 'fscore_peak_trimmed')
+                    fprintf(ctx.OutputHandle, '\t%.5f', analysis.results_hb.fscore_peak_trimmed);
+                elseif isfield(analysis.results_hb, 'fscore_peak')
+                    fprintf(ctx.OutputHandle, '\t%.5f', analysis.results_hb.fscore_peak);
+                else
+                    fprintf(ctx.OutputHandle, '\tNaN');
+                end
+            else
+                fprintf(ctx.OutputHandle, '\tNaN\tNaN');
+            end
+        else
+            analysis = AnalysisFiles.rethresholdExp(analysis, pre, 1, false);
+
+            %Dump to table
+            fprintf(ctx.OutputHandle, '\t%d', analysis.results_hb.threshold);
+            if (analysis.results_hb.threshold > 0)
+                spots = nnz(analysis.results_hb.callset{:, 'dropout_thresh'} >= analysis.results_hb.threshold);
+                fprintf(ctx.OutputHandle, '\t%d', spots);
+                
+                bstruct = [];
+                if isfield(analysis.results_hb, 'benchmarks')
+                    if isfield(analysis.results_hb.benchmarks, tsname)
+                        bstruct = analysis.results_hb.benchmarks.(tsname);
+                    elseif isfield(analysis.results_hb.benchmarks, 'BHImaris')
+                        bstruct = analysis.results_hb.benchmarks.BHImaris;
+                    end
+
+                    if ~isempty(bstruct)
+                        if isfield(bstruct, 'fscore_peak_trimmed')
+                            fprintf(ctx.OutputHandle, '\t%.5f', bstruct.fscore_peak_trimmed);
+                        elseif isfield(bstruct, 'fscore_peak')
+                            fprintf(ctx.OutputHandle, '\t%.5f', bstruct.fscore_peak);
+                        else
+                            fprintf(ctx.OutputHandle, '\tNaN');
+                        end
+                    else
+                        fprintf(ctx.OutputHandle, '\tNaN');
+                    end
+                else
+                    fprintf(ctx.OutputHandle, '\tNaN');
+                end
+
+            else
+                fprintf(ctx.OutputHandle, '\tNaN\tNaN');
+            end
+        end
+    end
+
+    fprintf(ctx.OutputHandle, '\n');
 end
 
 function do_sctcIndiv(ctx, analysis)

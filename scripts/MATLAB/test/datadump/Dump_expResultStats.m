@@ -191,10 +191,12 @@ function printGroups(outputFile, analysis)
             end
         end
     elseif startsWith(analysis.imgname, 'scprotein_')
-        fprintf(outputFile, 'scprotein\t');
+        %fprintf(outputFile, 'scprotein\t');
         if contains(analysis.imgname, 'Msb2')
             fprintf(outputFile, 'Msb2\t');
+            fprintf(outputFile, 'Msb2\t');
         else
+            fprintf(outputFile, 'Opy2\t');
             fprintf(outputFile, 'Opy2\t');
         end
     elseif startsWith(analysis.imgname, 'histonesc_')
@@ -208,17 +210,21 @@ function printGroups(outputFile, analysis)
                 fprintf(outputFile, 'XistI_Lo\t');
             end
         elseif endsWith(analysis.imgname, 'Histone')
-            fprintf(outputFile, 'Histone_AF488\t');
+            %fprintf(outputFile, 'Histone_AF488\t');
             if contains(analysis.imgname, 'D2')
                 if contains(analysis.imgname, 'H3K36me3')
+                    fprintf(outputFile, 'H3K36me3\t');
                     fprintf(outputFile, 'H3K36me3_D2\t');
                 else
+                    fprintf(outputFile, 'H3K4me2\t');
                     fprintf(outputFile, 'H3K4me2_D2\t');
                 end
             else
                 if contains(analysis.imgname, 'H3K36me3')
+                    fprintf(outputFile, 'H3K36me3\t');
                     fprintf(outputFile, 'H3K36me3_D0\t');
                 else
+                    fprintf(outputFile, 'H3K4me2\t');
                     fprintf(outputFile, 'H3K4me2_D0\t');
                 end
             end

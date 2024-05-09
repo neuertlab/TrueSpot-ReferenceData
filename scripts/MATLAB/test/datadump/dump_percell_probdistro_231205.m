@@ -18,7 +18,7 @@ scriptCtx = genScriptContextStruct(BaseDir);
 scriptCtx.ImgProcDir = ImgProcDir;
 scriptCtx.ImgDir = ImgDir;
 
-scriptCtx.DateSuffix = '231215';
+scriptCtx.DateSuffix = '240502';
 scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
 
 % ========================== Parameters ==========================
@@ -541,8 +541,8 @@ end
 function genGraphsPrecount(outdir, table, colors)
     if ~isfolder(outdir); mkdir(outdir); end
 
-    x_max = 200;
-    x_incr = 10;
+    x_max = 450;
+    x_incr = 25;
     save_plots = false;
 
     %%Cycle through all groups one by one
@@ -567,8 +567,8 @@ function genGraphsPrecount(outdir, table, colors)
 %     end
 
     %%Combine groups
-%     groupList = {'hela_18min_GFP' 'hela_5hr_GFP' 'hela_nostim_GFP'};
-%     groupName = 'HeLa_GFP';
+    groupList = {'hela_18min_GFP' 'hela_5hr_GFP' 'hela_nostim_GFP'};
+    groupName = 'HeLa_GFP';
 %     groupList = {'hela_18min_CY5' 'hela_5hr_CY5' 'hela_nostim_CY5'};
 %     groupName = 'HeLa_CY5';
 %     groupList = {'mesc0_XistE_CY5' 'mescH_XistE_CY5' 'mesc1_XistE_CY5'...
@@ -580,8 +580,8 @@ function genGraphsPrecount(outdir, table, colors)
 %     groupName = 'TsixE_TMR';
 %     groupList = {'mescHistD0_TsixI_TMR' 'mescHistD2_TsixI_TMR'};
 %     groupName = 'TsixI_TMR';
-    groupList = {'mescHistD0_H3K36me3_AF488' 'mescHistD2_H3K36me3_AF488'};
-    groupName = 'H3K36me3-AF488';
+%     groupList = {'mescHistD0_H3K36me3_AF488' 'mescHistD2_H3K36me3_AF488'};
+%     groupName = 'H3K36me3-AF488';
 %     groupList = {'mescHistD0_H3K4me2_AF488' 'mescHistD2_H3K4me2_AF488'};
 %     groupName = 'H3K4me2-AF488';
 

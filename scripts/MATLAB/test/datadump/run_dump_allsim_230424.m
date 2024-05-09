@@ -22,18 +22,22 @@ TablePath_Mass = [BaseDir filesep 'test_images_simvarmass.csv'];
 TablePath_YTC = [BaseDir filesep 'test_images_simytc.csv'];
 TablePath_Simneg = [BaseDir filesep 'test_images_simneg.csv'];
 
-AllTablePaths = {TablePath_Main, TablePath_Mass, TablePath_YTC, TablePath_Simneg};
+%AllTablePaths = {TablePath_Main, TablePath_Mass, TablePath_YTC, TablePath_Simneg};
+AllTablePaths = {TablePath_YTC};
 GroupPrefixes = {'sim_', 'simvar_', 'rsfish_sim_', 'simvarmass_', 'simneg_'};
 ImgTableCount = size(AllTablePaths, 2);
 SimGroupCount = size(GroupPrefixes, 2);
 
-OutTablePath = [TblOutDir filesep 'stats_sim_240327.tsv'];
-OutSpotsPathHB = [TblOutDir filesep 'spots_sim_hb_240327.tsv'];
-OutSpotsPathBF = [TblOutDir filesep 'spots_sim_bf_240327.tsv'];
-OutSpotsPathRS = [TblOutDir filesep 'spots_sim_rs_240327.tsv'];
-OutSpotsPathDB = [TblOutDir filesep 'spots_sim_db_240327.tsv'];
+OutTablePath = [TblOutDir filesep 'stats_sim_240426_3.tsv'];
+OutSpotsPathHB = [TblOutDir filesep 'spots_sim_hb_240426_3.tsv'];
+OutSpotsPathBF = [TblOutDir filesep 'spots_sim_bf_240426_3.tsv'];
+OutSpotsPathRS = [TblOutDir filesep 'spots_sim_rs_240426_3.tsv'];
+OutSpotsPathDB = [TblOutDir filesep 'spots_sim_db_240426_3.tsv'];
 
 XY_TRIM_RAD = 7;
+
+RECALC_PERF = false;
+EMPTY_TS_RECALL = -1;
 
 ImageTableCols = {'IMGNAME', 'SPOTS_ACTUAL', 'SPOTS_ACTUAL_XYTRIM',...
     'BKG_LVL', 'AMP_LVL', 'BKG_VAR', 'AMP_VAR',...
@@ -132,30 +136,32 @@ for t = 1:ImgTableCount
             y_max = analysis.image_dims.y - XY_TRIM_RAD;
 
             if isfield(analysis, 'simkey')
-                if isstruct(analysis.simkey)
-                    fprintf(OutTableFile, '%d\t', size(analysis.simkey,2));
+                if ~isempty(analysis.simkey)
+                    if isstruct(analysis.simkey)
+                        fprintf(OutTableFile, '%d\t', size(analysis.simkey,2));
 
-                    %XY Trim count
-                    xx = [analysis.simkey.x];
-                    x_trimmed = or((xx < x_min), (xx > x_max));
-                    yy = [analysis.simkey.y];
-                    y_trimmed = or((yy < y_min), (yy > y_max));
-                    xytrim = or(x_trimmed, y_trimmed);
+                        %XY Trim count
+                        xx = [analysis.simkey.x];
+                        x_trimmed = or((xx < x_min), (xx > x_max));
+                        yy = [analysis.simkey.y];
+                        y_trimmed = or((yy < y_min), (yy > y_max));
+                        xytrim = or(x_trimmed, y_trimmed);
 
-                    fprintf(OutTableFile, '%d\t', nnz(~xytrim));
-                    clear xx yy x_trimmed y_trimmed xytrim
-                else
-                    fprintf(OutTableFile, '%d\t', size(analysis.simkey,1));
+                        fprintf(OutTableFile, '%d\t', nnz(~xytrim));
+                        clear xx yy x_trimmed y_trimmed xytrim
+                    else
+                        fprintf(OutTableFile, '%d\t', size(analysis.simkey,1));
 
-                    %XY Trim count
-                    xx = analysis.simkey(:,1);
-                    x_trimmed = or((xx < x_min), (xx > x_max));
-                    yy = analysis.simkey(:,2);
-                    y_trimmed = or((yy < y_min), (yy > y_max));
-                    xytrim = or(x_trimmed, y_trimmed);
+                        %XY Trim count
+                        xx = analysis.simkey(:,1);
+                        x_trimmed = or((xx < x_min), (xx > x_max));
+                        yy = analysis.simkey(:,2);
+                        y_trimmed = or((yy < y_min), (yy > y_max));
+                        xytrim = or(x_trimmed, y_trimmed);
 
-                    fprintf(OutTableFile, '%d\t', nnz(~xytrim));
-                    clear xx yy x_trimmed y_trimmed xytrim
+                        fprintf(OutTableFile, '%d\t', nnz(~xytrim));
+                        clear xx yy x_trimmed y_trimmed xytrim
+                    end
                 end
             else
                 fprintf(OutTableFile, 'NaN\tNaN\t');
@@ -201,6 +207,20 @@ for t = 1:ImgTableCount
             end
 
             if isfield(analysis, 'results_hb')
+
+                if RECALC_PERF
+                    %Recalculate performance metrics...
+                    %Apply trim region
+                    analysis.results_hb.x_min = x_min;
+                    analysis.results_hb.x_max = x_max;
+                    analysis.results_hb.y_min = y_min;
+                    analysis.results_hb.y_max = y_max;
+                    [analysis.results_hb, ~] = AnalysisFiles.updateCallsetTrimRes(analysis.results_hb, analysis.image_dims, true);
+                    analysis.results_hb = AnalysisFiles.calculatePerformanceMetrics(...
+                        analysis.results_hb.callset, analysis.results_hb.threshold, analysis.results_hb, EMPTY_TS_RECALL, ...
+                        analysis.results_hb.th_scan_min, analysis.results_hb.th_scan_max);
+                end
+
                 if isfield(analysis.results_hb, 'performance')
                     th_table = table2array(analysis.results_hb.performance(:,'thresholdValue'));
                     th_idx = RNAUtils.findThresholdIndex(analysis.results_hb.threshold, transpose(th_table));
@@ -246,7 +266,9 @@ for t = 1:ImgTableCount
                     fprintf(OutTableFile, 'NaN\tNaN\tNaN\tNaN\tNaN\tNaN\tNaN\tNaN\tNaN\tNaN\t');
                 end
 
-                writeSpotTable(OutSpotsFileHB, analysis.results_hb, analysis.simkey, myname, img_snr);
+                if ~startsWith(analysis.imgname, 'simneg_')
+                    writeSpotTable(OutSpotsFileHB, analysis.results_hb, analysis.simkey, myname, img_snr);
+                end
 
             else
                 max_recall = NaN;
@@ -254,6 +276,16 @@ for t = 1:ImgTableCount
             end
 
             if isfield(analysis, 'results_bf')
+                if RECALC_PERF
+                    analysis.results_bf.x_min = x_min;
+                    analysis.results_bf.x_max = x_max;
+                    analysis.results_bf.y_min = y_min;
+                    analysis.results_bf.y_max = y_max;
+                    [analysis.results_bf, ~] = AnalysisFiles.updateCallsetTrimRes(analysis.results_bf, analysis.image_dims, true);
+                    analysis.results_bf = AnalysisFiles.calculatePerformanceMetrics(...
+                        analysis.results_bf.callset, analysis.results_bf.threshold, analysis.results_bf, EMPTY_TS_RECALL, 10, 1000);
+                end
+
                 if isfield(analysis.results_bf, 'performance')
                     th_table = table2array(analysis.results_bf.performance(:,'thresholdValue'));
                     th_idx = RNAUtils.findThresholdIndex(analysis.results_bf.threshold, transpose(th_table));
@@ -271,7 +303,7 @@ for t = 1:ImgTableCount
                     fprintf(OutTableFile, 'NaN\tNaN\tNaN\tNaN\tNaN\t');
                 end
 
-                if isfield(analysis.results_hb, 'performance_trimmed')
+                if isfield(analysis.results_bf, 'performance_trimmed')
                     fprintf(OutTableFile, '%d\t', analysis.results_bf.performance_trimmed{th_idx, 'spotCount'});
                     fprintf(OutTableFile, '%f\t', analysis.results_bf.pr_auc_trimmed);
                     fprintf(OutTableFile, '%f\t', analysis.results_bf.fscore_peak_trimmed);
@@ -296,13 +328,25 @@ for t = 1:ImgTableCount
                     fprintf(OutTableFile, '%f\t', max_recall);
                 end
 
-                writeSpotTable(OutSpotsFileBF, analysis.results_bf, analysis.simkey, myname, img_snr);
+                if ~startsWith(analysis.imgname, 'simneg_')
+                    writeSpotTable(OutSpotsFileBF, analysis.results_bf, analysis.simkey, myname, img_snr);
+                end
             else
                 %Max recall TODO
                 fprintf(OutTableFile, 'NaN\tNaN\tNaN\tNaN\tNaN\tNaN\tNaN\tNaN\tNaN\tNaN\t');
             end
 
             if isfield(analysis, 'results_rs')
+                if RECALC_PERF
+                    analysis.results_rs.x_min = x_min;
+                    analysis.results_rs.x_max = x_max;
+                    analysis.results_rs.y_min = y_min;
+                    analysis.results_rs.y_max = y_max;
+                    [analysis.results_rs, ~] = AnalysisFiles.updateCallsetTrimRes(analysis.results_rs, analysis.image_dims, true);
+                    analysis.results_rs = AnalysisFiles.calculatePerformanceMetrics(...
+                        analysis.results_rs.callset, 0, analysis.results_rs, EMPTY_TS_RECALL);
+                end
+
                 if isfield(analysis.results_rs, 'performance')
                     fprintf(OutTableFile, '%f\t', analysis.results_rs.pr_auc);
                     fprintf(OutTableFile, '%f\t', analysis.results_rs.fscore_peak);
@@ -326,13 +370,25 @@ for t = 1:ImgTableCount
                     fprintf(OutTableFile, '%f\t', max_recall);
                 end
 
-                writeSpotTable(OutSpotsFileRS, analysis.results_rs, analysis.simkey, myname, img_snr);
+                if ~startsWith(analysis.imgname, 'simneg_')
+                    writeSpotTable(OutSpotsFileRS, analysis.results_rs, analysis.simkey, myname, img_snr);
+                end
             else
                 %Max recall
                 fprintf(OutTableFile, 'NaN\tNaN\tNaN\tNaN\tNaN\tNaN\t');
             end
 
             if isfield(analysis, 'results_db')
+                if RECALC_PERF
+                    analysis.results_db.x_min = x_min;
+                    analysis.results_db.x_max = x_max;
+                    analysis.results_db.y_min = y_min;
+                    analysis.results_db.y_max = y_max;
+                    [analysis.results_db, ~] = AnalysisFiles.updateCallsetTrimRes(analysis.results_db, analysis.image_dims, true);
+                    analysis.results_db = AnalysisFiles.calculatePerformanceMetrics(...
+                        analysis.results_db.callset, 0.95, analysis.results_db, EMPTY_TS_RECALL, 0.01, 1.0);
+                end
+
                 if isfield(analysis.results_db, 'performance')
                     fprintf(OutTableFile, '%f\t', analysis.results_db.pr_auc);
                     fprintf(OutTableFile, '%f\t', analysis.results_db.fscore_peak);
@@ -356,13 +412,25 @@ for t = 1:ImgTableCount
                     fprintf(OutTableFile, '%f\t', max_recall);
                 end
 
-                writeSpotTable(OutSpotsFileDB, analysis.results_db, analysis.simkey, myname, img_snr);
+                if ~startsWith(analysis.imgname, 'simneg_')
+                    writeSpotTable(OutSpotsFileDB, analysis.results_db, analysis.simkey, myname, img_snr);
+                end
             else
                 %Max recall
                 fprintf(OutTableFile, 'NaN\tNaN\tNaN\tNaN\tNaN\tNaN\t');
             end
 
             if isfield(analysis, 'results_db_simmdl')
+                if RECALC_PERF
+                    analysis.results_db_simmdl.x_min = x_min;
+                    analysis.results_db_simmdl.x_max = x_max;
+                    analysis.results_db_simmdl.y_min = y_min;
+                    analysis.results_db_simmdl.y_max = y_max;
+                    [analysis.results_db_simmdl, ~] = AnalysisFiles.updateCallsetTrimRes(analysis.results_db_simmdl, analysis.image_dims, true);
+                    analysis.results_db_simmdl = AnalysisFiles.calculatePerformanceMetrics(...
+                        analysis.results_db_simmdl.callset, 0.95, analysis.results_db_simmdl, EMPTY_TS_RECALL);
+                end
+
                 if isfield(analysis.results_db_simmdl, 'performance')
                     fprintf(OutTableFile, '%f\t', analysis.results_db_simmdl.pr_auc);
                     fprintf(OutTableFile, '%f\t', analysis.results_db_simmdl.fscore_peak);
@@ -400,6 +468,10 @@ for t = 1:ImgTableCount
                 fprintf(OutTableFile, 'NaN\n');
             end
 
+
+            if RECALC_PERF
+                save(ResFilePath, 'analysis', '-v7.3');
+            end
         else
             fprintf('> Results file for %s could not be found. Skipping...\n', myname);
         end

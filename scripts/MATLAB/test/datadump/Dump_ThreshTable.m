@@ -54,10 +54,12 @@ function Dump_ThreshTable(outputFile, analysis)
             end
         end
     elseif startsWith(analysis.imgname, 'scprotein_')
-        fprintf(outputFile, 'scprotein\t');
+        %fprintf(outputFile, 'scprotein\t');
         if contains(analysis.imgname, 'Msb2')
             fprintf(outputFile, 'Msb2\t');
+            fprintf(outputFile, 'Msb2\t');
         else
+            fprintf(outputFile, 'Opy2\t');
             fprintf(outputFile, 'Opy2\t');
         end
     elseif startsWith(analysis.imgname, 'histonesc_')
@@ -71,17 +73,21 @@ function Dump_ThreshTable(outputFile, analysis)
                 fprintf(outputFile, 'XistI_Lo\t');
             end
         elseif endsWith(analysis.imgname, 'Histone')
-            fprintf(outputFile, 'Histone_AF488\t');
+            %fprintf(outputFile, 'Histone_AF488\t');
             if contains(analysis.imgname, 'D2')
                 if contains(analysis.imgname, 'H3K36me3')
+                    fprintf(outputFile, 'H3K36me3\t');
                     fprintf(outputFile, 'H3K36me3_D2\t');
                 else
+                    fprintf(outputFile, 'H3K4me2\t');
                     fprintf(outputFile, 'H3K4me2_D2\t');
                 end
             else
                 if contains(analysis.imgname, 'H3K36me3')
+                    fprintf(outputFile, 'H3K36me3\t');
                     fprintf(outputFile, 'H3K36me3_D0\t');
                 else
+                    fprintf(outputFile, 'H3K4me2\t');
                     fprintf(outputFile, 'H3K4me2_D0\t');
                 end
             end
@@ -98,6 +104,8 @@ function Dump_ThreshTable(outputFile, analysis)
         else
             fprintf(outputFile, 'Preibisch_celegans\tPreibisch_celegans\t');
         end
+    elseif startsWith(analysis.imgname, 'simneg_')
+        fprintf(outputFile, 'SimNeg\tSimNeg\t');
     elseif startsWith(analysis.imgname, 'simerly_')
         ptarg = analysis.probe_target;
         flurophore = analysis.probe;
@@ -119,7 +127,11 @@ function Dump_ThreshTable(outputFile, analysis)
 
     %Print HB results
     if isfield(analysis, 'results_hb')
-        thval = analysis.results_hb.threshold;
+        if isfield(analysis.results_hb, 'threshold')
+            thval = analysis.results_hb.threshold;
+        else
+            thval = 0;
+        end
         if thval > 0
             fprintf(outputFile, '%d\t', thval);
         else

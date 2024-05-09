@@ -5,6 +5,9 @@ function Dump_sctcStats(outhandle_struct, analysis, fixed_th_struct)
 %Main Table Fields:
 %   IMAGENAME EXP REP TIME I_NUM CH THVAL_HB THVAL_BF THSPOTS_HB THSPOTS_BF
 
+%TODO: This has a bug with header labeling!!! THVAL_BF and THSPOTS_HB
+%are swapped for only exp images. Remember to update to swap for sim too!
+
 %Cell Table Fields:
 %   EXP REP TIME I_NUM CH CELL_NUM THI_HB_TOT THI_BF_TOT...
 %Repeat with THR (rep fixed th), THE (exp fixed th), and THC (ch fixed

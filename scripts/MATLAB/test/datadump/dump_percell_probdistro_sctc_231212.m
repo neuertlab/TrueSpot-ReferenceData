@@ -18,7 +18,7 @@ scriptCtx = genScriptContextStruct(BaseDir);
 scriptCtx.ImgProcDir = ImgProcDir;
 scriptCtx.ImgDir = ImgDir;
 
-scriptCtx.DateSuffix = '231215';
+scriptCtx.DateSuffix = '240424';
 scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
 
 % ========================== Parameters ==========================
