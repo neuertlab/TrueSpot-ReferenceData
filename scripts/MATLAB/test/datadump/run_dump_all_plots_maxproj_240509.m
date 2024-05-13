@@ -21,6 +21,9 @@ DUMP_SPOTCOUNTS = true;
 DUMP_FSCORES = false;
 DUMP_PRC = false;
 
+Z_MIN = 10;
+Z_MAX = 16;
+
 % ========================== Other Paths ==========================
 
 ImageDumpDir = [ImgProcDir filesep 'figures' filesep 'all_curves'];
@@ -49,6 +52,18 @@ image_table = testutil_opentable(InputTablePath);
 %TODO use indiv summar files instead!
 %load(DataFilePath, 'image_analyses');
 
+if Z_MIN > 0
+    zminstr = num2str(Z_MIN);
+else
+    zminstr = '1';
+end
+
+if Z_MAX > 0
+    zmaxstr = num2str(Z_MAX);
+else
+    zmaxstr = 'Z';
+end
+
 for i = START_INDEX:END_INDEX
 
     %Find summary file.
@@ -61,30 +76,30 @@ for i = START_INDEX:END_INDEX
         continue;
     end
     
-%     if ~isfield(analysis, 'refsets') & ~isfield(analysis, 'simkey')
-%         continue;
-%     end
+    %if ~isfield(analysis, 'refsets') & ~isfield(analysis, 'simkey')
+    %    continue;
+    %end
 
     if DUMP_SPOTCOUNTS
-        figpath = [spc_figdir filesep 'spc__' myname '.png'];
+        figpath = [spc_figdir filesep 'spc__' myname '_' zminstr '_' zmaxstr '_maxproj.png'];
         %fig_handle = GenMultiTool_SpotPlot(image_analyses(i).analysis);
-        fig_handle = GenMultiTool_SpotPlot(analysis);
+        fig_handle = GenMultiTool_SpotPlot_MaxProj(analysis, Z_MIN, Z_MAX);
         saveas(fig_handle, figpath);
         close(fig_handle);
     end
 
     if DUMP_FSCORES
-        figpath = [fsc_figdir filesep 'fsc__' myname '.png'];
+        figpath = [fsc_figdir filesep 'fsc__' myname '_' zminstr '_' zmaxstr '_maxproj.png'];
         %fig_handle = GenMultiTool_FScorePlot(image_analyses(i).analysis);
-        fig_handle = GenMultiTool_FScorePlot(analysis);
+        fig_handle = GenMultiTool_FScorePlot_MaxProj(analysis, Z_MIN, Z_MAX);
         saveas(fig_handle, figpath);
         close(fig_handle);
     end
 
     if DUMP_PRC
-        figpath = [prc_figdir filesep 'prc__' myname '.png'];
+        figpath = [prc_figdir filesep 'prc__' '_' zminstr '_' zmaxstr '_maxproj.png'];
         %fig_handle = GenMultiTool_ROCPlot(image_analyses(i).analysis);
-        fig_handle = GenMultiTool_ROCPlot(analysis);
+        fig_handle = GenMultiTool_ROCPlot_MaxProj_MaxProj(analysis, Z_MIN, Z_MAX);
         saveas(fig_handle, figpath);
         close(fig_handle);
     end

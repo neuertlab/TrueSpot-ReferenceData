@@ -17,7 +17,7 @@ addpath('./test/datadump');
 
 ResultsDir = [BaseDir filesep 'data' filesep 'results'];
 
-DateSuffix = '240507';
+DateSuffix = '240510';
 OutputDir = [ImgProcDir filesep 'tables'];
 
 TablePath_Main = [BaseDir filesep 'test_images.csv'];

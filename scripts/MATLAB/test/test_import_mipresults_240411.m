@@ -18,7 +18,7 @@ START_INDEX = 243;
 END_INDEX = 272;
 
 DO_HOMEBREW = true;
-DO_BIGFISH = false;
+DO_BIGFISH = true;
 DO_RSFISH = false;
 DO_DEEPBLINK = false;
 
@@ -29,13 +29,14 @@ Z_MIN = 0;
 Z_MAX = 0;
 SNAP_RAD = 4;
 FILTER_Z_RAD = 2;
+MIDPOINT = 6;
 
 OutputDir = [BaseDir filesep 'data' filesep 'results'];
 
 DEADPIX_WORKDIR = './bgh_old';
 
 RS_TH_IVAL = 0.1/250;
-SCRIPT_VER = 'v24.05.06.00';
+SCRIPT_VER = 'v24.05.09.01';
 COMPUTER_NAME = 'CHROMAT_WIN';
 %COMPUTER_NAME = 'VU_NEUERTLAB_HOSPELB';
 
@@ -171,17 +172,30 @@ for r = START_INDEX:END_INDEX
                 rstruct.threshold_details = spotsrun.threshold_results;
                 th_val = rstruct.threshold;
 
+                rstruct.th_scan_min = spotsrun.options.t_min;
+                rstruct.th_scan_max = spotsrun.options.t_max;
+
                 if isempty(rstruct.threshold_details)
                     %Try rethresh
-                    fprintf('\t> Thresholding did not run. Trying now...');
-                    spot_table = RNAUtils.spotTableFromCallTable(call_table, true);
-                    threshold_results = RNAThreshold.runSavedParameters(spotsrun, 1, spot_table, []);
+                    fprintf('\t> Thresholding did not run. Trying now...\n');
+                    spot_table = RNAUtils.spotTableFromCallTable(call_table, true, rstruct.th_scan_min, rstruct.th_scan_max);
+            
+                    if startsWith(myname, 'histonesc_')
+                        if endsWith(myname, '_Histone')
+                            threshold_results = RNAThreshold.runWithPreset(spot_table, [], MIDPOINT + 5);
+                        elseif endsWith(myname, '_Tsix')
+                            threshold_results = RNAThreshold.runWithPreset(spot_table, [], MIDPOINT - 2);
+                        else
+                            threshold_results = RNAThreshold.runSavedParameters(spotsrun, 1, spot_table, []);
+                        end
+                    else
+                        threshold_results = RNAThreshold.runSavedParameters(spotsrun, 1, spot_table, []);
+                    end
 
                     rstruct.threshold_details = threshold_results;
                     rstruct.threshold = threshold_results.threshold;
                     th_val = rstruct.threshold;
                 end
-
             else
                 rstruct.threshold = 0;
                 rstruct.threshold_details = [];
@@ -299,6 +313,9 @@ for r = START_INDEX:END_INDEX
             if ~isempty(cell_mask)
                 rstruct.callset = RNACoords.applyCellSegMask(rstruct.callset, cell_mask);
             end
+
+            rstruct.th_scan_min = 10;
+            rstruct.th_scan_max = 1000;
 
             analysis.results_bf.(mipFieldName) = rstruct;
         else

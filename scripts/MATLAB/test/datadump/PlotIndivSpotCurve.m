@@ -20,7 +20,14 @@ elseif isfield(rstruct, 'benchmarks')
         y = bstruct.performance{:, 'spotCount'};
     end
 else
-    return;
+    if ~isfield(rstruct, 'callset')
+        return;
+    end
+    if isfield(rstruct, 'th_scan_min')
+        [x, y] = RNAUtils.spotCountFromCallTable(rstruct.callset, false, rstruct.th_scan_min, rstruct.th_scan_max);
+    else
+        [x, y] = RNAUtils.spotCountFromCallTable(rstruct.callset, false);
+    end
 end
 
 y = double(y);
