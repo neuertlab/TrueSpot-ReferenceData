@@ -1,13 +1,13 @@
 %
 %%  !! UPDATE TO YOUR BASE DIR
-%BaseDir = 'D:\Users\hospelb\labdata\imgproc\imgproc';
-BaseDir = 'D:\usr\bghos\labdat\imgproc';
+BaseDir = 'D:\Users\hospelb\labdata\imgproc\imgproc';
+%BaseDir = 'D:\usr\bghos\labdat\imgproc';
 
-%ImgProcDir = 'D:\Users\hospelb\labdata\imgproc';
-ImgProcDir = 'D:\usr\bghos\labdat\imgproc';
+ImgProcDir = 'D:\Users\hospelb\labdata\imgproc';
+%ImgProcDir = 'D:\usr\bghos\labdat\imgproc';
 
-%ImgDir = 'C:\Users\hospelb\labdata\imgproc';
-ImgDir = 'D:\usr\bghos\labdat\imgproc';
+ImgDir = 'C:\Users\hospelb\labdata\imgproc';
+%ImgDir = 'D:\usr\bghos\labdat\imgproc';
 
 addpath('./core');
 addpath('./test');
@@ -18,8 +18,9 @@ scriptCtx = genScriptContextStruct(BaseDir);
 scriptCtx.ImgProcDir = ImgProcDir;
 scriptCtx.ImgDir = ImgDir;
 
-scriptCtx.DateSuffix = '240503';
-scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
+scriptCtx.DateSuffix = '240514';
+%scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
+scriptCtx.OutputDir = [ImgProcDir filesep 'istats'];
 
 % ========================== Parameters ==========================
 
@@ -74,7 +75,7 @@ scriptCtx = finalize(scriptCtx);
 
 function ctx = initialize(ctx)
     %TODO fill in action here.
-    ctx = openThOutput(ctx);
+    %ctx = openThOutput(ctx);
 
     %ctx = open_sctcOutput(ctx);
     %ctx = openExpDumpOutput(ctx);
@@ -87,6 +88,8 @@ function ctx = initialize(ctx)
     %mkdir(ctx.coords_dir);
 
     %ctx = openMinThCountOutput(ctx);
+
+    ctx = openImageStatsOutput(ctx);
 end
 
 function ctx = finalize(ctx)
@@ -100,7 +103,7 @@ end
 
 function doTheThing(ctx, analysis)
     %TODO fill in action here.
-    Dump_ThreshTable(ctx.OutputHandle, analysis);
+    %Dump_ThreshTable(ctx.OutputHandle, analysis);
 
     %do_sctcIndiv(ctx, analysis);
     %Dump_expResultStats(ctx.OutputHandle, analysis, 'BH');
@@ -126,11 +129,13 @@ function doTheThing(ctx, analysis)
 %     end
 
     %writeMinThCountLine(ctx, analysis);
+
+    doImageStats(ctx, analysis);
 end
 
 function bool_res = shouldSkip(imgName)
     %TODO fill in action here.
-    bool_res = false;
+    %bool_res = false;
     %bool_res = skip_sctc(imgName);
 
     %if ~startsWith(imgName, 'simerly_'); bool_res = true; end
@@ -146,6 +151,11 @@ function bool_res = shouldSkip(imgName)
 %     if startsWith(imgName, 'rsfish_sim'); bool_res = true; end
 
     %bool_res = ~bool_res;
+
+    bool_res = true;
+    if startsWith(imgName, 'histonesc_'); bool_res = false; end
+    if startsWith(imgName, 'mESC_loday_'); bool_res = false; end
+    if startsWith(imgName, 'mESC4d_'); bool_res = false; end
 end
 
 function ctx = genScriptContextStruct(basedir)
@@ -188,6 +198,23 @@ function val = getTableValue(mytable, row_index, field)
 end
 
 % ========================== Dump Functions ==========================
+
+function ctx = openImageStatsOutput(ctx)
+    outpath = [ctx.OutputDir filesep 'imgStatsSummary_' ctx.DateSuffix '.tsv'];
+    ctx.OutputHandle = fopen(outpath, 'w');
+
+    %Header
+    outfields = {'IMGNAME' 'CELLTYPE' 'PROBE' 'TARGET' ...
+        'BKG_MEAN' 'BKG_STD' 'BKG_MEDIAN' 'BKG_MIN' 'BKG_MAX' ...
+        'CELLBKG_MEAN' 'CELLBKG_STD' 'CELLBKG_MEDIAN' 'CELLBKG_MIN' 'CELLBKG_MAX'...
+        'SIGNAL_MEAN' 'SIGNAL_STD', 'SIGNAL_MEDIAN', 'SIGNAL_MIN' 'SIGNAL_MAX'};
+    field_count = size(outfields, 2);
+    for i = 1:field_count
+        if i > 1; fprintf(ctx.OutputHandle, '\t'); end
+        fprintf(ctx.OutputHandle, outfields{i});
+    end
+    fprintf(ctx.OutputHandle, '\n');
+end
 
 function ctx = openThPresetCompareOutput(ctx, presetCount)
     outpath = [ctx.OutputDir filesep 'thPresetCompare_' ctx.DateSuffix '.tsv'];
@@ -597,4 +624,78 @@ function ctx = writeMinThCountLine(ctx, analysis)
     prop = spotcount/totvox;
     fprintf(ctx.OutputHandle, '%f\n', prop);
 
+end
+
+function ctx = doImageStats(ctx, analysis)
+%TODO
+    SCOLCOUNT = 15;
+
+    fprintf(ctx.OutputHandle, '%s', analysis.imgname);
+    fprintf(ctx.OutputHandle, '\t%s', analysis.cell_type);
+    fprintf(ctx.OutputHandle, '\t%s', analysis.probe);
+    fprintf(ctx.OutputHandle, '\t%s', analysis.probe_target);
+
+    %Load cellseg mask
+    cellsegDir = getTableValue(ctx.ImageInfoTable, ctx.TableRow, 'CELLSEG_DIR');
+    if strcmp(cellsegDir, '.')
+        fprintf('\t>Could not find cellseg data! Skipping...\n');
+        for i = 1:SCOLCOUNT; fprintf(ctx.OutputHandle, '\tNaN'); end
+        fprintf(ctx.OutputHandle, '\n');
+        return;
+    end
+
+    cellsegSuffix = getTableValue(ctx.ImageInfoTable, ctx.TableRow, 'CELLSEG_SFX');
+    if strcmp(cellsegSuffix, '.')
+        fprintf('\t>Could not find cellseg data! Skipping...\n');
+        for i = 1:SCOLCOUNT; fprintf(ctx.OutputHandle, '\tNaN'); end
+        fprintf(ctx.OutputHandle, '\n');
+        return;
+    end
+
+    cellsegPath = [ctx.BaseDir replace(cellsegDir, '/', filesep) filesep 'Lab_' cellsegSuffix '.mat'];
+    cellMask = CellSeg.openCellMask(cellsegPath);
+
+    %Load TIF
+    chTotal = getTableValue(ctx.ImageInfoTable, ctx.TableRow, 'CH_TOTAL');
+    chSample = getTableValue(ctx.ImageInfoTable, ctx.TableRow, 'CHANNEL');
+    tifPathRaw = getTableValue(ctx.ImageInfoTable, ctx.TableRow, 'IMAGEPATH');
+    tifPath = [ctx.ImgDir replace(tifPathRaw, '/', filesep)];
+    [channels, ~] = LoadTif(tifPath, chTotal, [chSample], 1);
+
+    loadedImage = channels{1, chSample};
+    clear channels;
+
+    stats = GetImageIntensityStats(loadedImage, analysis, cellMask, xy_rad, z_rad);
+    if ~isempty(stats)
+        %Copy to table and output matlab file
+        matpath = [ctx.OutputDir filesep 'stats_' analysis.imgname '.mat'];
+        save(matpath, 'stats', '-v7.3');
+
+        fprintf(ctx.OutputHandle, '\t%.4f', mean(stats.bkgMean, 'all', 'omitnan'));
+        fprintf(ctx.OutputHandle, '\t%.4f', mean(stats.bkgStd, 'all', 'omitnan'));
+        fprintf(ctx.OutputHandle, '\t%.4f', median(stats.bkgMedian, 'all', 'omitnan'));
+        fprintf(ctx.OutputHandle, '\t%.4f', min(stats.bkgMin, [], 'all', 'omitnan'));
+        fprintf(ctx.OutputHandle, '\t%.4f', max(stats.bkgMax, [], 'all', 'omitnan'));
+
+        fprintf(ctx.OutputHandle, '\t%.4f', mean(stats.cellBkgMean, 'all', 'omitnan'));
+        fprintf(ctx.OutputHandle, '\t%.4f', mean(stats.cellBkgStd, 'all', 'omitnan'));
+        fprintf(ctx.OutputHandle, '\t%.4f', median(stats.cellBkgMedian, 'all', 'omitnan'));
+        fprintf(ctx.OutputHandle, '\t%.4f', min(stats.cellBkgMin, [], 'all', 'omitnan'));
+        fprintf(ctx.OutputHandle, '\t%.4f', max(stats.cellBkgMax, [], 'all', 'omitnan'));
+
+        fprintf(ctx.OutputHandle, '\t%.4f', stats.signalMean);
+        fprintf(ctx.OutputHandle, '\t%.4f', stats.signalStd);
+        fprintf(ctx.OutputHandle, '\t%.4f', stats.signalMedian);
+        fprintf(ctx.OutputHandle, '\t%.4f', stats.signalMin);
+        fprintf(ctx.OutputHandle, '\t%.4f', stats.signalMax);
+
+    else
+        %Write NaNs to table
+        fprintf('\t>Stat derivation failed! Skipping...\n');
+        for i = 1:SCOLCOUNT; fprintf(ctx.OutputHandle, '\tNaN'); end
+        fprintf(ctx.OutputHandle, '\n');
+        return;
+    end
+
+    fprintf(ctx.OutputHandle, '\n');
 end
