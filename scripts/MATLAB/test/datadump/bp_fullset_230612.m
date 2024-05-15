@@ -18,9 +18,9 @@ scriptCtx = genScriptContextStruct(BaseDir);
 scriptCtx.ImgProcDir = ImgProcDir;
 scriptCtx.ImgDir = ImgDir;
 
-scriptCtx.DateSuffix = '240514';
+scriptCtx.DateSuffix = '240515';
 %scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
-scriptCtx.OutputDir = [ImgProcDir filesep 'istats'];
+scriptCtx.OutputDir = [BaseDir filesep 'istats'];
 
 % ========================== Parameters ==========================
 
@@ -662,10 +662,10 @@ function ctx = doImageStats(ctx, analysis)
     tifPath = [ctx.ImgDir replace(tifPathRaw, '/', filesep)];
     [channels, ~] = LoadTif(tifPath, chTotal, [chSample], 1);
 
-    loadedImage = channels{1, chSample};
+    loadedImage = channels{chSample, 1};
     clear channels;
 
-    stats = GetImageIntensityStats(loadedImage, analysis, cellMask, xy_rad, z_rad);
+    stats = GetImageIntensityStats(loadedImage, analysis, cellMask);
     if ~isempty(stats)
         %Copy to table and output matlab file
         matpath = [ctx.OutputDir filesep 'stats_' analysis.imgname '.mat'];

@@ -73,7 +73,7 @@ function stats = GetImageIntensityStats(loadedImage, analysis, cellMask, xy_rad,
 
     fprintf('\t> Calculating per-slice image background stats...\n');
     for z = 1:Z
-        myslice = immultipy(loadedImage(:,:,z), bkgMask);
+        myslice = immultiply(loadedImage(:,:,z), bkgMask);
         myslice(myslice == 0) = NaN;
         stats.bkgMean(z) = mean(myslice, 'all', 'omitnan');
         stats.bkgStd(z) = std(myslice, 0, 'all', 'omitnan');
@@ -135,10 +135,12 @@ function stats = GetImageIntensityStats(loadedImage, analysis, cellMask, xy_rad,
     end
     clear z2
 
-    sigRegVals = immultiply(loadedImage, double(sigMask));
+    sigMask = double(sigMask);
+    sigMask(sigMask == 0) = NaN;
+    sigRegVals = immultiply(loadedImage, sigMask);
     stats.signalRegMean = mean(sigRegVals, 'all', 'omitnan');
-    stats.signalRegMedian = std(sigRegVals, 0, 'all', 'omitnan');
-    stats.signalRegStd = median(sigRegVals, 'all', 'omitnan');
+    stats.signalRegStd = std(sigRegVals, 0, 'all', 'omitnan');
+    stats.signalRegMedian = median(sigRegVals, 'all', 'omitnan');
 
     %Derive cell background mask (try to remove signal)
     cellMaskBool = (cellMask > 0);
