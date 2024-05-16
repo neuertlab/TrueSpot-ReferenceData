@@ -10,14 +10,17 @@ MATLAB_MODULE_NAME = 'MATLAB/2022a';
 
 % ========================== I/O Info ==========================
 
-IN_DIR = '/nobackup/p_neuert_lab/JohnAdams/Yeast FISH';
+IN_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Images/JA20240510';
 %RECURSIVE = true;
 
-OUT_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/JA20240510';
+OUT_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Analysis/JA20240510';
 
 % ========================== Image Options ==========================
 
 CH_SAMPLE = 3;
+%CH_SAMPLE = 4;
+%CH_SAMPLE = 5;
+
 CH_LIGHT = 1;
 CH_DAPI = 2;
 CH_TOTAL = 5;
@@ -32,15 +35,20 @@ TH_PRESET = 0; %Offset from default
 
 TARGET_NAME = 'CTT1';
 PROBE_NAME = 'CY5';
+%TARGET_NAME = 'STL1';
+%PROBE_NAME = 'TMR';
+%TARGET_NAME = 'GPP1';
+%PROBE_NAME = 'AF594';
+
 TARGET_TYPE = 'mRNA';
 SPECIES_NAME = 'Saccharomyces cerevisiae';
-CELL_TYPE = 'Haploid';
+CELL_TYPE = 'GNY0117 Haploid';
 
 % ========================== Slurm Options ==========================
 
 CPUS_PER_JOB = 4;
-RAM_GB_PER_JOB = 16;
-HR_PER_JOB = 8;
+RAM_GB_PER_JOB = 32;
+HR_PER_JOB = 10;
 
 % ========================== Generate Scripts ==========================
 
