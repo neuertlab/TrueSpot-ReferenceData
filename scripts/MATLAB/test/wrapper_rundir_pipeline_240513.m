@@ -4,8 +4,8 @@
 TRUESPOT_DIR = '/nobackup/p_neuert_lab/hospelb/TrueSpot_Release';
 SCRIPT_WD = '/nobackup/p_neuert_lab/hospelb/imgproc/slurm/script';
 
-SCRIPT_DIR_LOCAL = 'C:\Users\bghos\Desktop\slurm';
-%SCRIPT_DIR_LOCAL = 'C:\Users\hospelb.VUDS\Desktop\slurm';
+%SCRIPT_DIR_LOCAL = 'C:\Users\bghos\Desktop\slurm';
+SCRIPT_DIR_LOCAL = 'C:\Users\hospelb.VUDS\Desktop\slurm';
 MATLAB_MODULE_NAME = 'MATLAB/2022a';
 
 % ========================== I/O Info ==========================
@@ -24,9 +24,11 @@ CH_DAPI = 2;
 CH_TOTAL = 5;
 VOX_SIZE = [110 110 500];
 
-CELLSEG_PRESET = 'sacCer_100x';
+CELLSEG_PRESET = 'sacCer_60x';
 CELLSEG_ZMIN = 15;
 CELLSEG_ZMAX = 23;
+NUCSEG_ZMIN = 30;
+NUCSEG_ZMAX = 39;
 
 GAUSS_RAD = 7;
 TH_PRESET = 0; %Offset from default
@@ -113,6 +115,8 @@ fprintf(masterScript, ' -chlight %d', CH_LIGHT);
 fprintf(masterScript, ' -chnuc %d', CH_DAPI);
 fprintf(masterScript, ' -fzmin %d', CELLSEG_ZMIN);
 fprintf(masterScript, ' -fzmax %d', CELLSEG_ZMAX);
+fprintf(masterScript, ' -nuczmin %d', NUCSEG_ZMIN);
+fprintf(masterScript, ' -nuczmax %d', NUCSEG_ZMAX);
 %fprintf(masterScript, ' -ocellmask \"${ioutDir}/${fname}_cellmask.tif\"');
 %fprintf(masterScript, ' -onucmask \"${ioutDir}/${fname}_nucmask.tif\"');
 fprintf(masterScript, ' -template \\"%s\\"', CELLSEG_PRESET);
