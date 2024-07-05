@@ -10,10 +10,10 @@ MATLAB_MODULE_NAME = 'MATLAB/2022a';
 
 % ========================== I/O Info ==========================
 
-IN_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Images/JA20240514';
+IN_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Images/JA20240606';
 %RECURSIVE = true;
 
-OUT_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Analysis/JA20240514';
+OUT_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Analysis/JA20240606';
 
 % ========================== Image Options ==========================
 
@@ -33,9 +33,13 @@ NUCSEG_ZMAX = 39;
 GAUSS_RAD = 7;
 TH_PRESET = 0; %Offset from default
 
-%TARGET_NAMES = {'CTT1' 'STL1' 'GPP1'};
-TARGET_NAMES = {'GPD1' 'GPP2' 'HSP12'};
-PROBE_NAMES = {'CY5' 'TMR' 'AF594'};
+%TARGET_NAMES = {'CTT1' 'STL1' 'GPP1'}; %JA 5/10/24
+%TARGET_NAMES = {'STL1' 'GPP1' 'CTT1'}; %JA 6/4/24
+%TARGET_NAMES = {'GPD1' 'GPP2' 'HSP12'}; %JA 5/14/24
+TARGET_NAMES = {'GPP2' 'GPD1' 'HSP12'}; %JA 6/6/24
+%PROBE_NAMES = {'CY5' 'TMR' 'AF594'}; %JA 5/10 and 5/14
+%PROBE_NAMES = {'TMR' 'AF594' 'CY5'}; %JA 6/4
+PROBE_NAMES = {'TMR' 'CY5' 'AF594'}; %JA 6/6
 TARGET_TYPES = {'mRNA' 'mRNA' 'mRNA'};
 
 SPECIES_NAME = 'Saccharomyces cerevisiae';
@@ -46,6 +50,10 @@ CELL_TYPE = 'GNY0117 Haploid';
 CPUS_PER_JOB_CELLSEG = 2;
 RAM_GB_PER_JOB_CELLSEG = 32;
 HR_PER_JOB_CELLSEG = 4;
+
+CPUS_PER_JOB_POSTRES = 2;
+RAM_GB_PER_JOB_POSTRES =16;
+HR_PER_JOB_POSTRES = 4;
 
 CPUS_PER_JOB = 1;
 RAM_GB_PER_JOB = 32;
@@ -228,5 +236,37 @@ fprintf(masterScript, '" >> "${submitScript}"\n');
 fprintf(masterScript, '\techo -e "fi\\n" >> "${submitScript}"\n\n');
 
 fprintf(masterScript, 'done < ${imageListPath}\n\n');
+
+%Generate a post-processing script (one to submit, one that does
+%submission)
+[~, outdirName, ~] = fileparts(OUT_DIR);
+fprintf(masterScript, '\npostJobScript="${outputDir}/procRes.sh"\n');
+fprintf(masterScript, 'postJobSubmitScript=\"${outputDir}/doProcRes.sh\"\n');
+fprintf(masterScript, 'postJobMatLogQCPath="${outputDir}/procResMATQC.log"\n');
+fprintf(masterScript, 'postJobMatLogDumpPath="${outputDir}/procResMATDump.log"\n');
+fprintf(masterScript, 'postJobOutPath="${outputDir}/procRes.out"\n');
+fprintf(masterScript, 'postJobErrPath="${outputDir}/procRes.err"\n');
+fprintf(masterScript, 'echo -e "#!/bin/bash\\n" > "${postJobScript}"\n');
+fprintf(masterScript, 'echo -e "module load %s" >> "${postJobScript}"\n', MATLAB_MODULE_NAME);
+fprintf(masterScript, 'echo -e "matlab -nodisplay -nosplash -logfile \\"${postJobMatLogQCPath}\\"');
+fprintf(masterScript, ' -r \\"cd ''%s/src'';', TRUESPOT_DIR);
+fprintf(masterScript, ' Main_QCSummary(''-input'', ''${outputDir}'');');
+fprintf(masterScript, ' quit;\\"" >> "${postJobScript}"\n');
+fprintf(masterScript, 'echo -e "\\nmatlab -nodisplay -nosplash -logfile \\"${postJobMatLogDumpPath}\\"');
+fprintf(masterScript, ' -r \\"cd ''%s/src'';', TRUESPOT_DIR);
+fprintf(masterScript, ' Main_DumpQuantResults(''-input'', ''${outputDir}'');');
+fprintf(masterScript, ' quit;\\"" >> "${postJobScript}"\n');
+fprintf(masterScript, 'echo -e "#!/bin/bash\\n" > "${postJobSubmitScript}"\n');
+fprintf(masterScript, 'echo -e "chmod 770 \\"${postJobScript}\\"" >> "${postJobSubmitScript}"\n');
+fprintf(masterScript, 'echo -e "sbatch');
+fprintf(masterScript, ' --job-name=\\"PostRes_%s\\"', outdirName);
+fprintf(masterScript, ' --cpus-per-task=%d', CPUS_PER_JOB_POSTRES);
+fprintf(masterScript, ' --time=%d:00:00', HR_PER_JOB_POSTRES);
+fprintf(masterScript, ' --mem=%dg', RAM_GB_PER_JOB_POSTRES);
+fprintf(masterScript, ' --error=\\"${postJobErrPath}\\"');
+fprintf(masterScript, ' --out=\\"${postJobOutPath}\\"');
+fprintf(masterScript, ' \\"${postJobScript}\\"');
+fprintf(masterScript, '" >> "${postJobSubmitScript}"\n');
+fprintf(masterScript, 'chmod 770 "${postJobSubmitScript}"\n');
 
 fclose(masterScript);
