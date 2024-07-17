@@ -10,10 +10,10 @@ MATLAB_MODULE_NAME = 'MATLAB/2022a';
 
 % ========================== I/O Info ==========================
 
-IN_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Images/JA20240606';
+IN_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Images/JA20240514';
 %RECURSIVE = true;
 
-OUT_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Analysis/JA20240606';
+OUT_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Analysis/JA20240514';
 
 % ========================== Image Options ==========================
 
@@ -25,8 +25,8 @@ CH_TOTAL = 5;
 VOX_SIZE = [110 110 500];
 
 CELLSEG_PRESET = 'sacCer_60x';
-CELLSEG_ZMIN = 15;
-CELLSEG_ZMAX = 23;
+CELLSEG_ZMIN = 34;
+CELLSEG_ZMAX = 39;
 NUCSEG_ZMIN = 30;
 NUCSEG_ZMAX = 39;
 
@@ -35,11 +35,11 @@ TH_PRESET = 0; %Offset from default
 
 %TARGET_NAMES = {'CTT1' 'STL1' 'GPP1'}; %JA 5/10/24
 %TARGET_NAMES = {'STL1' 'GPP1' 'CTT1'}; %JA 6/4/24
-%TARGET_NAMES = {'GPD1' 'GPP2' 'HSP12'}; %JA 5/14/24
-TARGET_NAMES = {'GPP2' 'GPD1' 'HSP12'}; %JA 6/6/24
-%PROBE_NAMES = {'CY5' 'TMR' 'AF594'}; %JA 5/10 and 5/14
+TARGET_NAMES = {'GPD1' 'GPP2' 'HSP12'}; %JA 5/14/24
+%TARGET_NAMES = {'GPP2' 'GPD1' 'HSP12'}; %JA 6/6/24
+PROBE_NAMES = {'CY5' 'TMR' 'AF594'}; %JA 5/10 and 5/14
 %PROBE_NAMES = {'TMR' 'AF594' 'CY5'}; %JA 6/4
-PROBE_NAMES = {'TMR' 'CY5' 'AF594'}; %JA 6/6
+%PROBE_NAMES = {'TMR' 'CY5' 'AF594'}; %JA 6/6
 TARGET_TYPES = {'mRNA' 'mRNA' 'mRNA'};
 
 SPECIES_NAME = 'Saccharomyces cerevisiae';
@@ -52,10 +52,10 @@ RAM_GB_PER_JOB_CELLSEG = 32;
 HR_PER_JOB_CELLSEG = 4;
 
 CPUS_PER_JOB_POSTRES = 2;
-RAM_GB_PER_JOB_POSTRES =16;
+RAM_GB_PER_JOB_POSTRES = 16;
 HR_PER_JOB_POSTRES = 4;
 
-CPUS_PER_JOB = 1;
+CPUS_PER_JOB = 4;
 RAM_GB_PER_JOB = 32;
 HR_PER_JOB = 10;
 
@@ -157,7 +157,7 @@ for ci = 1:sampleChannelCount
     fprintf(masterScript, ' -outstem \\"${spotsResStem}\\"');
     fprintf(masterScript, ' -imgname \\"${iname}\\"');
     fprintf(masterScript, ' -chtotal %d', CH_TOTAL);
-    fprintf(masterScript, ' -chlight %d', CH_LIGHT);
+    fprintf(masterScript, ' -chtrans %d', CH_LIGHT);
     fprintf(masterScript, ' -chsamp %d', sampleCh);
     fprintf(masterScript, ' -cellseg \\"${csResFile}\\"');
     fprintf(masterScript, ' -voxelsize \\"(%d,%d,%d)\\"', VOX_SIZE(1), VOX_SIZE(2), VOX_SIZE(3));
@@ -191,7 +191,7 @@ for ci = 1:sampleChannelCount
     fprintf(masterScript, ' -outdir \\"${coutDir}\\"');
     fprintf(masterScript, ' -cellsegpath \\"${csResFile}\\"');
     fprintf(masterScript, ' -coordtable \\"${spotsResStem}_callTable.mat\\"');
-    fprintf(masterScript, ' -workers %d', CPUS_PER_JOB);
+    %fprintf(masterScript, ' -workers %d', CPUS_PER_JOB);
     fprintf(masterScript, ' -log \\"${coutDir}/${iname}_quant_mat.log\\"');
     fprintf(masterScript, '" >> "${myChannelScript}"\n\n');
     fprintf(masterScript, '\techo -e "else" >> "${myChannelScript}"\n');
