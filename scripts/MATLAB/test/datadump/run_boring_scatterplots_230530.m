@@ -14,10 +14,10 @@ addpath('./test');
 
 % ========================== Constants ==========================
 
-SimResCSVPath = [BaseDir filesep 'sim_results.csv'];
+SimResCSVPath = [BaseDir filesep 'sim_results_240426.csv'];
 
-DateDir = '20230913';
-DateSuffix = '230913';
+DateDir = '20240527';
+DateSuffix = '240527';
 OutDir = [ImgProcDir filesep 'figures' filesep DateDir];
 
 % ========================== Parameters ==========================

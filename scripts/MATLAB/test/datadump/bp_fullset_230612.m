@@ -1,13 +1,13 @@
 %
 %%  !! UPDATE TO YOUR BASE DIR
-BaseDir = 'D:\Users\hospelb\labdata\imgproc\imgproc';
-%BaseDir = 'D:\usr\bghos\labdat\imgproc';
+%BaseDir = 'D:\Users\hospelb\labdata\imgproc\imgproc';
+BaseDir = 'D:\usr\bghos\labdat\imgproc';
 
-ImgProcDir = 'D:\Users\hospelb\labdata\imgproc';
-%ImgProcDir = 'D:\usr\bghos\labdat\imgproc';
+%ImgProcDir = 'D:\Users\hospelb\labdata\imgproc';
+ImgProcDir = 'D:\usr\bghos\labdat\imgproc';
 
-ImgDir = 'C:\Users\hospelb\labdata\imgproc';
-%ImgDir = 'D:\usr\bghos\labdat\imgproc';
+%ImgDir = 'C:\Users\hospelb\labdata\imgproc';
+ImgDir = 'D:\usr\bghos\labdat\imgproc';
 
 addpath('./core');
 addpath('./test');
@@ -18,9 +18,9 @@ scriptCtx = genScriptContextStruct(BaseDir);
 scriptCtx.ImgProcDir = ImgProcDir;
 scriptCtx.ImgDir = ImgDir;
 
-scriptCtx.DateSuffix = '240515';
-%scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
-scriptCtx.OutputDir = [BaseDir filesep 'istats'];
+scriptCtx.DateSuffix = '240528';
+scriptCtx.OutputDir = [ImgProcDir filesep 'tables'];
+%scriptCtx.OutputDir = [BaseDir filesep 'istats'];
 
 % ========================== Parameters ==========================
 
@@ -75,7 +75,7 @@ scriptCtx = finalize(scriptCtx);
 
 function ctx = initialize(ctx)
     %TODO fill in action here.
-    %ctx = openThOutput(ctx);
+    ctx = openThOutput(ctx);
 
     %ctx = open_sctcOutput(ctx);
     %ctx = openExpDumpOutput(ctx);
@@ -89,7 +89,7 @@ function ctx = initialize(ctx)
 
     %ctx = openMinThCountOutput(ctx);
 
-    ctx = openImageStatsOutput(ctx);
+   % ctx = openImageStatsOutput(ctx);
 end
 
 function ctx = finalize(ctx)
@@ -103,10 +103,10 @@ end
 
 function doTheThing(ctx, analysis)
     %TODO fill in action here.
-    %Dump_ThreshTable(ctx.OutputHandle, analysis);
+    Dump_ThreshTable(ctx.OutputHandle, analysis);
 
     %do_sctcIndiv(ctx, analysis);
-    %Dump_expResultStats(ctx.OutputHandle, analysis, 'BH');
+    %Dump_expResultStats(ctx.OutputHandle, analysis, 'BHImaris');
 
     %dumpCountsIndiv(ctx, analysis);
 
@@ -130,15 +130,42 @@ function doTheThing(ctx, analysis)
 
     %writeMinThCountLine(ctx, analysis);
 
-    doImageStats(ctx, analysis);
+    %doImageStats(ctx, analysis);
+
+%     fprintf('%s', analysis.imgname);
+%     fprintf('\t%s-%s (', analysis.probe_target, analysis.probe);
+%     if contains(analysis.imgname, '_40x_')
+%         fprintf('40X)');
+%     elseif contains(analysis.imgname, '_HiBkg_')
+%         if contains(analysis.cell_type, '(Hypothalamus)')
+%             fprintf('HiBkg, ARH)');
+%         else
+%             fprintf('HiBkg, BST)');
+%         end
+%     elseif contains(analysis.imgname, '_LoBkg_')
+%         fprintf('LoBkg)');
+%     end
+% 
+%     if isfield(analysis, 'refsets')
+%         fprintf('\tY');
+%     else
+%         fprintf('\tN');
+%     end
+% 
+%     fprintf('\t[%d,%d,%d]', analysis.image_dims.x, analysis.image_dims.y, analysis.image_dims.z);
+%     fprintf('\t[%d,%d,%d]', analysis.voxel_dims.x, analysis.voxel_dims.y, analysis.voxel_dims.z);
+%     fprintf('\t[%d,%d,%d]', analysis.point_dims.x, analysis.point_dims.y, analysis.point_dims.z);
+% 
+%     fprintf('\n');
+   %fixSimerlyFalseNeg(ctx, analysis);
 end
 
 function bool_res = shouldSkip(imgName)
     %TODO fill in action here.
-    %bool_res = false;
+    bool_res = false;
     %bool_res = skip_sctc(imgName);
 
-    %if ~startsWith(imgName, 'simerly_'); bool_res = true; end
+    if ~startsWith(imgName, 'simerly_'); bool_res = true; end
 
 %     if ~startsWith(imgName, 'simerly_') & ~startsWith(imgName, 'simneg_')
 %         bool_res = true;
@@ -152,10 +179,10 @@ function bool_res = shouldSkip(imgName)
 
     %bool_res = ~bool_res;
 
-    bool_res = true;
-    if startsWith(imgName, 'histonesc_'); bool_res = false; end
-    if startsWith(imgName, 'mESC_loday_'); bool_res = false; end
-    if startsWith(imgName, 'mESC4d_'); bool_res = false; end
+%     bool_res = true;
+%     if startsWith(imgName, 'histonesc_'); bool_res = false; end
+%     if startsWith(imgName, 'mESC_loday_'); bool_res = false; end
+%     if startsWith(imgName, 'mESC4d_'); bool_res = false; end
 end
 
 function ctx = genScriptContextStruct(basedir)
@@ -198,6 +225,60 @@ function val = getTableValue(mytable, row_index, field)
 end
 
 % ========================== Dump Functions ==========================
+
+function ctx = fixSimerlyFalseNeg(ctx, analysis)
+    if ~isfield(analysis, 'refsets'); return; end
+
+    if isfield(analysis, 'results_hb')
+        rstruct = analysis.results_hb;
+        if isfield(rstruct, 'callset')
+            rstruct.callset{(rstruct.callset{:, 'dropout_thresh'} == 0), 'is_true'} = true;
+            pmetrics = rstruct.benchmarks.BHImaris;
+            pmetrics = AnalysisFiles.calculatePerformanceMetrics(...
+                rstruct.callset, rstruct.threshold, pmetrics, 0, rstruct.th_scan_min, rstruct.th_scan_max);
+            rstruct.benchmarks.BHImaris = pmetrics;
+        end
+        analysis.results_hb = rstruct;
+    end
+
+    if isfield(analysis, 'results_bf')
+        rstruct = analysis.results_bf;
+        if isfield(rstruct, 'callset')
+            rstruct.callset{(rstruct.callset{:, 'dropout_thresh'} == 0), 'is_true'} = true;
+            pmetrics = rstruct.benchmarks.BHImaris;
+            pmetrics = AnalysisFiles.calculatePerformanceMetrics(...
+                rstruct.callset, rstruct.threshold, pmetrics, 0, 10, 1000);
+            rstruct.benchmarks.BHImaris = pmetrics;
+        end
+        analysis.results_bf = rstruct;
+    end
+
+    if isfield(analysis, 'results_rs')
+        rstruct = analysis.results_rs;
+        if isfield(rstruct, 'callset')
+            rstruct.callset{(rstruct.callset{:, 'dropout_thresh'} == 0), 'is_true'} = true;
+            pmetrics = rstruct.benchmarks.BHImaris;
+            pmetrics = AnalysisFiles.calculatePerformanceMetrics(...
+                rstruct.callset, 0, pmetrics);
+            rstruct.benchmarks.BHImaris = pmetrics;
+        end
+        analysis.results_rs = rstruct;
+    end
+
+    if isfield(analysis, 'results_db')
+        rstruct = analysis.results_db;
+        if isfield(rstruct, 'callset')
+            rstruct.callset{(rstruct.callset{:, 'dropout_thresh'} == 0), 'is_true'} = true;
+            pmetrics = rstruct.benchmarks.BHImaris;
+            pmetrics = AnalysisFiles.calculatePerformanceMetrics(...
+                rstruct.callset, 0, pmetrics);
+            rstruct.benchmarks.BHImaris = pmetrics;
+        end
+        analysis.results_db = rstruct;
+    end
+
+    save(ctx.ResultsPath, 'analysis');
+end
 
 function ctx = openImageStatsOutput(ctx)
     outpath = [ctx.OutputDir filesep 'imgStatsSummary_' ctx.DateSuffix '.tsv'];

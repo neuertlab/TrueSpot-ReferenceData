@@ -16,8 +16,8 @@ addpath('./test');
 
 % ========================== Constants ==========================
 
-DateDir = '20230603';
-DateSuffix = '230603';
+DateDir = '20240527';
+DateSuffix = '240527';
 OutDir = [ImgProcDir filesep 'figures' filesep DateDir];
 
 % ========================== Parameters ==========================
