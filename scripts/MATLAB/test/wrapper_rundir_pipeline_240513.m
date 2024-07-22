@@ -10,10 +10,10 @@ MATLAB_MODULE_NAME = 'MATLAB/2022a';
 
 % ========================== I/O Info ==========================
 
-IN_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Images/JA20240514';
+IN_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Images/JA20240606';
 %RECURSIVE = true;
 
-OUT_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Analysis/JA20240514';
+OUT_DIR = '/nobackup/p_neuert_lab/hospelb/RNAFISH/Analysis/JA20240606';
 
 % ========================== Image Options ==========================
 
@@ -35,11 +35,11 @@ TH_PRESET = 0; %Offset from default
 
 %TARGET_NAMES = {'CTT1' 'STL1' 'GPP1'}; %JA 5/10/24
 %TARGET_NAMES = {'STL1' 'GPP1' 'CTT1'}; %JA 6/4/24
-TARGET_NAMES = {'GPD1' 'GPP2' 'HSP12'}; %JA 5/14/24
-%TARGET_NAMES = {'GPP2' 'GPD1' 'HSP12'}; %JA 6/6/24
-PROBE_NAMES = {'CY5' 'TMR' 'AF594'}; %JA 5/10 and 5/14
+%TARGET_NAMES = {'GPD1' 'GPP2' 'HSP12'}; %JA 5/14/24
+TARGET_NAMES = {'GPP2' 'GPD1' 'HSP12'}; %JA 6/6/24
+%PROBE_NAMES = {'CY5' 'TMR' 'AF594'}; %JA 5/10 and 5/14
 %PROBE_NAMES = {'TMR' 'AF594' 'CY5'}; %JA 6/4
-%PROBE_NAMES = {'TMR' 'CY5' 'AF594'}; %JA 6/6
+PROBE_NAMES = {'TMR' 'CY5' 'AF594'}; %JA 6/6
 TARGET_TYPES = {'mRNA' 'mRNA' 'mRNA'};
 
 SPECIES_NAME = 'Saccharomyces cerevisiae';
