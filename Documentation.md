@@ -35,16 +35,18 @@ Information about each image channel that was to be benchmarked, including file 
 ### Cell Segmentation
 Cell segmentation for experimental images was conducted once using the GUI version of our existing cell segmentation tool ([Kesler, et al. 2019](https://doi.org/10.1038/s41598-019-46689-5)). These same cell masks were used for all analyses and all tools, even for tools such as Big-FISH which have their own cell segmentation modules. This was mostly to keep things consistent.
 
+The GUI tool can be run from `src/celldissect/A0_GUI_seg_outside_generalized.m`
+
 ### Spot Calling -- TrueSpot
 TrueSpot was run from the command line (via `Main_RNASpots.m`) on the ACCRE cluster. Each image channel was assigned its own slurm job and resources so that multiple channels could be processed in parallel (TrueSpot's spot detection itself can be further parallelized). The bash scripts for each slurm job and the script that submitted the jobs were genereated by `test_tbl2bash_221115.m` (along with Big-FISH job scripts). Variables at the top of the script determine which images are pulled and which runs are included.
 
-We used MATLAB 2018b for these runs to ensure some degree of backward compatilibity, but it appears to work on versions at least up to 2022a (probably works on newer, just haven't tested).
+We used MATLAB 2018b for the earlier runs to ensure some degree of compatibility, but after some minor changes it seems that certain parts require newer versions to work properly. Later analyses were run in MATLAB 2022a.
 
 Additionally, an older version of TrueSpot from early 2023 was used for the majority of the tests (excepting the simerly lab and simneg groups, which were run much later) rather than the version available in the repository upon initial release. The primary changes made were code organization and formatting of the tool's data output since the debug version outputs were extremely messy. Nothing was changed in the internal algorithms or pipeline flow until February 2024. The version from late 2023 was used to run the remaining aforementioned groups, though there was a holdover from the messier debug code that was incompatible with the changes which prevented the automatic threshold call from being saved (this has since been fixed). As a result, the callsets where re-thresholded using the `bp_fullset_230612.m` and `plotbug_correct_240214.m` scripts.
 
 The Feb 2024 update moved the code that cleaned up log projection plots for fitting (filling in holes and removing negative extremes) to its own function with some changes. Additionally, two features were added to the automatic thresholder: the option to log project BEFORE apply the absdiff/Fano transformation, and the option to scale window sizes to the size of the tested range.
 
-Release version 1.0.x has the same thresholder version that was used for the tests done for the manuscript preprint. Version 1.1.0 will have the updated thresholder.
+Release version 1.0.0 has the same thresholder version that was used for the tests done for the manuscript preprint. Version 1.1.0 has the updated thresholder. Results from 1.0.0 can be reprouced by 1.1.0.
 
 ### Spot Fitting -- TrueSpot
 The spot fitting/quantification module was separate from the spot detection module when we did these runs. The script generation for fitting was also handled by `test_tbl2bash_221115.m` (if "quant" is requested), but TrueSpot's fitting module was called via `Main_RNAQuant.m`.
@@ -160,14 +162,17 @@ Truthsets for RS-FISH simulated images can be found in the results mat files und
 Of note, all Sim-FISH ground truths use only integer coordinates, whereas RS-FISH set ground truths have subpixel precise coordinates.
 
 ### Experimental Image Reference Set Generation
-**TODO:** The experimental refsets are now JUST in the results files. Also update for new organization.
-The code containing all of the brains for the agnostic manual reference set generation tool lies in `core/RNA_Threshold_SpotSelector.m`. The wrapper scripts used to cleanly call this tool are `test_launch_spotanno_221116` (used by B.H.) and `spotpickscript_v2` (used by other manual curators). These scripts are meant to be used interactively, the user plugging in their root directory and name of the image to curate and it pulling up the location of the spot call data and image file from a master table. 
+The code containing all of the brains for the agnostic manual reference set generation tool lies in `core/RNA_Threshold_SpotSelector.m`. The wrapper scripts used to cleanly call this tool are `test_launch_spotanno_221116` (used by B.H.) and `spotpickscript_v2` (used by other manual curators). These scripts are meant to be used interactively, the user plugging in their root directory and name of the image to curate and it pulling up the location of the spot call data and image file from a master table.
+
+Cleaner code for generating visualization of outputs is a work-in-progress (see `VisCommon`, `SpotCallVisualization`, `CellsegDrawer`, and `QuantVisualization` in `core`).
 
 The `core/RNA_Threshold_SpotSelector.m` code renders the target image and its LoG filtered version (switching between slice-by-slice or maximum projection can be done with user input) into a MATLAB figure. Mouse and key listeners are used to allow the user to click on points on the image that they want to mark as spots. User can request computer snap their selections to an automated callset for feedback in tight clusters (any callset can be loaded in, not just TrueSpot's), but manual curators were instructed to override any computer suggestions that they did not agree with. Importantly, the same snapping algorithm was applied to these reference sets against all callsets upon performance analysis, so choice of computer set during manual spot selection should have no effect on performance metrics. 
 
+`RNA_Threshold_SpotSelector` only works with old, raw outputs - it cannot read the newer coordinate tables. Old outputs from original runs are available upon request. Newer outputs can be visualized using the new visualization code.
+
 Manual reference sets from each curator are provided in the experimental reference set repository linked in the README. They can also be found in the image result MAT files as `analysis.exprefset` (a n-by-3 matrix of 1-based x,y,z coordinates). `analysis.truthset_region` specifies the region of the image included in the truthset, as in some cases the image was too large and had too many signal spots to curate in a reasonable timeframe and a piece of the image was used (and evaluated) instead.
 
-Because experimental images had multiple manual curators, these sets are stored in the result files as `analysis.truthset_{CURATOR}`. For the current version of the manuscript, the BH sets were used across all images, however we intend to integrate the results from more manual curators in future results sets. Recalculated performance metrics for different reference sets can also be found in results structures, both as columns in the `callset` tables as alternate `performance` tables under `analysis.results_{TOOLABBR}.truthset_{CURATOR}`.
+These sets are stored in the result files as `analysis.truthset_{CURATOR}`. For the current version of the manuscript, the BH sets were used across all images, however we intend to integrate the results from more manual curators in future results sets. Recalculated performance metrics for different reference sets can also be found in results structures, both as columns in the `callset` tables as alternate `performance` tables under `analysis.results_{TOOLABBR}.truthset_{CURATOR}`.
 
 ## Data Organization
 This section describes how data were dumped from binary `mat` files storing detailed results to analysis-specific tables.
