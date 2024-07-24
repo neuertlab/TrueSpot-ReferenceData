@@ -194,7 +194,7 @@ This section describes how data were dumped from binary `mat` files storing deta
 ### Composite Result File Contents
 Callsets and performance stats for all tools are stored in MATLAB `mat` files for each benchmarked image. Each file contains a struct called `analysis` that contains all of the result data. The top level of `analysis` contains information pertaining to the image in general.
 
-![Figure describing the contents of the top level of two representative example results structs.](/doc/datadoc_resstruct_outer.png)
+![Figure describing the contents of the top level of two representative example results structs.](/doc/datadoc_resstruct_outer_exp.png)
 
 Tool-specific results are in the sub-structures labeled `results_{TOOLABBR}`. Results for the retrained deepBlink model, when present, can be found in `results_db_simmdl`.
 
