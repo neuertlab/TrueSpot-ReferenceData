@@ -21,10 +21,12 @@ Large data files and file collections used for benchmarking are not hosted in th
 * Neuert lab simulated images (Hospelhorn, et al. 2024)
 * RS-FISH benchmarking set (Bahry, et al. 2022)
 
-### By-Image Results (Callset) Composite Files
+### Results Data
 
-### Experimental Image Manual Reference Sets
+All other large data including:
+* Results files for each image including call sets, reference sets, and performance calculations.
+* Cell segmentation masks
+* Simulated image ground truth keys
+* deepBlink retrained model data
 
-### deepBlink Retrained Model Data
-
-### Cell Segmentation Masks
+Can be found in our BioStudies archive: (Link pending)
