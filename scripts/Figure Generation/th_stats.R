@@ -2,7 +2,7 @@
 library(tidyverse)
 
 #Read table
-inputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\thstatsdump_240112.tsv"
+inputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\thstatsdump_240503.tsv"
 thTable <- read_tsv(inputTablePath)
 
 #Remove small and non-experimental groups
@@ -14,6 +14,7 @@ thTable <- filter(thTable, GROUP_A != "SimVar")
 thTable <- filter(thTable, GROUP_A != "SimVar1000")
 thTable <- filter(thTable, GROUP_A != "Preibisch_sim")
 thTable <- filter(thTable, GROUP_A != "Preibisch_celegans")
+thTable <- filter(thTable, GROUP_A != "SimNeg")
 
 #Allocate columns for group means and standard deviations
 thTable$HB_GROUPA_MEAN <- rep(NaN, nrow(thTable))
@@ -103,7 +104,8 @@ ggplot(expOnly, aes(GROUP_A, COV_A)) +
 	
 	
 #----------- sctc Th groups by timepoint
-inputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\sctcdump_main_230613.tsv"
+#inputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\sctcdump_main_230613.tsv"
+inputTablePath <- "D:\\usr\\bghos\\labdat\\imgproc\\tables\\sctcdump_main_240429.tsv"
 sctcThTable <- read_tsv(inputTablePath)
 
 sctcThTable$ER_MEAN_HB <- rep(NaN, nrow(sctcThTable))
@@ -194,7 +196,7 @@ sctcSub <- filter(sctcThTablePlot, EXP == 2 & CH == 2)
 
 ggplot(sctcSub, aes(TIME, THVAL_NORM_E)) +
 	geom_boxplot(aes(colour = TOOL), outlier.alpha = 0.25) +
-	geom_jitter(aes(colour = TOOL), width = 0.3, alpha = 0.5)
+	geom_point(aes(colour = TOOL), width = 0.3, alpha = 0.5)
 	
 #Coefficients of variation...
 ggplot(sctcSub, aes(TIME, COV_E)) + 

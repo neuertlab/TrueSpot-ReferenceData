@@ -7,7 +7,9 @@ theme_notforants <- theme(axis.text.x=element_blank(), axis.ticks.x=element_blan
 		legend.title=element_text(size=14), strip.text=element_text(size=12))
 
 #Load Data
-inputTablePath <- "D:\\usr\\bghos\\labdat\\sim_results.csv"
+#inputTablePath <- "D:\\usr\\bghos\\labdat\\sim_results.csv"
+#inputTablePath <- "D:\\usr\\bghos\\labdat\\sim_results_240326.csv"
+inputTablePath <- "D:\\usr\\bghos\\labdat\\sim_results_240426.csv"
 inputTable <- read.csv(inputTablePath)
 
 plabSims <- filter(inputTable, startsWith(IMGNAME, "rsfish_"))
@@ -15,6 +17,9 @@ sfSims <- filter(inputTable, !startsWith(IMGNAME, "rsfish_"))
 
 plabSims <- filter(plabSims, FILT_PROP_ZERO < 0.7)
 sfSims <- filter(sfSims, FILT_PROP_ZERO < 0.7)
+
+subgroup <- filter(inputTable, HBTr_FSCORE <= 0.7)
+subgroup <- filter(subgroup, FILT_PROP_ZERO >= 0.65)
 
 # ----------------> Prepare initial table
 
@@ -82,7 +87,7 @@ ggplot(plabPlotTable, aes(x = Tool, y = FScore, fill = Tool)) +
 	ggtitle("Preibisch Lab Sim Set - F-Scores") +
 	scale_fill_manual(values = alpha(c("magenta", "red", "blue", "green", "yellow", "orange"), .3))
 	
-test_set <- filter(sfPlotTable, Tool == "Big-FISH")
+test_set <- filter(plabPlotTable, Tool == "NeuertLab")
 quantiles_fscore <- quantile(test_set$FScore, probs = c(0.25, 0.5, 0.75), na.rm = TRUE)
 mean_fscore <- mean(test_set$FScore, na.rm = TRUE)
 std_fscore <- sd(test_set$FScore, na.rm = TRUE)
@@ -267,7 +272,7 @@ rm(test_res)
 # ----------------> Plots against density and SNR (ZVP stuff too)
 
 snr_safe <- filter(plotTable, is.finite(SNR))
-snr_safe <- filter(snr_safe, ZVP < 0.7)
+snr_safe <- filter(snr_safe, ZVP < 0.6)
 
 #Change x and y for whatever testing
 plott <- ggplot(snr_safe, aes(x = SNR, y = ZVP)) +
@@ -292,13 +297,13 @@ snr_safe <- filter(plotTable, is.finite(SNR_DIFF))
 
 #To reduce redundancy
 snr_safe <- filter(snr_safe, Tool == "NeuertLab")
-ggplot(snr_safe, aes(x = SNR, y = ZVP)) +
+ggplot(snr_safe, aes(x = SNR, y = FScore)) +
 	geom_density_2d_filled(bins = 50) + 
 	ylim(0.0, 1.0) +
 	scale_x_log10()
 
 snr_safe <- filter(plotTable, is.finite(SNR_DIFF))
-ggplot(snr_safe, aes(x = ZVP, y = FScore)) +
+ggplot(snr_safe, aes(x = AmpVar, y = FScore)) +
 	geom_density_2d_filled(bins = 50) + 
 	ylim(0.0, 1.0) +
 	xlim(0.0, 1.0) +
