@@ -53,7 +53,7 @@ HR_PER_JOB_CELLSEG = 4;
 
 CPUS_PER_JOB_POSTRES = 2;
 RAM_GB_PER_JOB_POSTRES = 16;
-HR_PER_JOB_POSTRES = 4;
+HR_PER_JOB_POSTRES = 8;
 
 CPUS_PER_JOB = 4;
 RAM_GB_PER_JOB = 32;
@@ -240,33 +240,53 @@ fprintf(masterScript, 'done < ${imageListPath}\n\n');
 %Generate a post-processing script (one to submit, one that does
 %submission)
 [~, outdirName, ~] = fileparts(OUT_DIR);
-fprintf(masterScript, '\npostJobScript="${outputDir}/procRes.sh"\n');
+fprintf(masterScript, '\npostJobScriptQC="${outputDir}/procResQC.sh"\n');
+fprintf(masterScript, 'postJobScriptDump="${outputDir}/procResDump.sh"\n');
 fprintf(masterScript, 'postJobSubmitScript=\"${outputDir}/doProcRes.sh\"\n');
 fprintf(masterScript, 'postJobMatLogQCPath="${outputDir}/procResMATQC.log"\n');
 fprintf(masterScript, 'postJobMatLogDumpPath="${outputDir}/procResMATDump.log"\n');
-fprintf(masterScript, 'postJobOutPath="${outputDir}/procRes.out"\n');
-fprintf(masterScript, 'postJobErrPath="${outputDir}/procRes.err"\n');
-fprintf(masterScript, 'echo -e "#!/bin/bash\\n" > "${postJobScript}"\n');
-fprintf(masterScript, 'echo -e "module load %s" >> "${postJobScript}"\n', MATLAB_MODULE_NAME);
+fprintf(masterScript, 'postJobOutPathQC="${outputDir}/procResQC.out"\n');
+fprintf(masterScript, 'postJobErrPathQC="${outputDir}/procResQC.err"\n');
+fprintf(masterScript, 'postJobOutPathDump="${outputDir}/procResDump.out"\n');
+fprintf(masterScript, 'postJobErrPathDump="${outputDir}/procResDump.err"\n');
+
+fprintf(masterScript, 'echo -e "#!/bin/bash\\n" > "${postJobScriptQC}"\n');
+fprintf(masterScript, 'echo -e "module load %s" >> "${postJobScriptQC}"\n', MATLAB_MODULE_NAME);
 fprintf(masterScript, 'echo -e "matlab -nodisplay -nosplash -logfile \\"${postJobMatLogQCPath}\\"');
 fprintf(masterScript, ' -r \\"cd ''%s/src'';', TRUESPOT_DIR);
 fprintf(masterScript, ' Main_QCSummary(''-input'', ''${outputDir}'');');
-fprintf(masterScript, ' quit;\\"" >> "${postJobScript}"\n');
+fprintf(masterScript, ' quit;\\"" >> "${postJobScriptQC}"\n');
+
+fprintf(masterScript, 'echo -e "#!/bin/bash\\n" > "${postJobScriptDump}"\n');
+fprintf(masterScript, 'echo -e "module load %s" >> "${postJobScriptDump}"\n', MATLAB_MODULE_NAME);
 fprintf(masterScript, 'echo -e "\\nmatlab -nodisplay -nosplash -logfile \\"${postJobMatLogDumpPath}\\"');
 fprintf(masterScript, ' -r \\"cd ''%s/src'';', TRUESPOT_DIR);
 fprintf(masterScript, ' Main_DumpQuantResults(''-input'', ''${outputDir}'');');
-fprintf(masterScript, ' quit;\\"" >> "${postJobScript}"\n');
+fprintf(masterScript, ' quit;\\"" >> "${postJobScriptDump}"\n');
+
 fprintf(masterScript, 'echo -e "#!/bin/bash\\n" > "${postJobSubmitScript}"\n');
-fprintf(masterScript, 'echo -e "chmod 770 \\"${postJobScript}\\"" >> "${postJobSubmitScript}"\n');
+fprintf(masterScript, 'echo -e "chmod 770 \\"${postJobScriptQC}\\"" >> "${postJobSubmitScript}"\n');
 fprintf(masterScript, 'echo -e "sbatch');
-fprintf(masterScript, ' --job-name=\\"PostRes_%s\\"', outdirName);
+fprintf(masterScript, ' --job-name=\\"PostQC_%s\\"', outdirName);
 fprintf(masterScript, ' --cpus-per-task=%d', CPUS_PER_JOB_POSTRES);
 fprintf(masterScript, ' --time=%d:00:00', HR_PER_JOB_POSTRES);
 fprintf(masterScript, ' --mem=%dg', RAM_GB_PER_JOB_POSTRES);
-fprintf(masterScript, ' --error=\\"${postJobErrPath}\\"');
-fprintf(masterScript, ' --out=\\"${postJobOutPath}\\"');
-fprintf(masterScript, ' \\"${postJobScript}\\"');
+fprintf(masterScript, ' --error=\\"${postJobErrPathQC}\\"');
+fprintf(masterScript, ' --out=\\"${postJobOutPathQC}\\"');
+fprintf(masterScript, ' \\"${postJobScriptQC}\\"');
 fprintf(masterScript, '" >> "${postJobSubmitScript}"\n');
+
+fprintf(masterScript, 'echo -e "chmod 770 \\"${postJobScriptDump}\\"" >> "${postJobSubmitScript}"\n');
+fprintf(masterScript, 'echo -e "sbatch');
+fprintf(masterScript, ' --job-name=\\"DumpQ_%s\\"', outdirName);
+fprintf(masterScript, ' --cpus-per-task=%d', CPUS_PER_JOB_POSTRES);
+fprintf(masterScript, ' --time=%d:00:00', HR_PER_JOB_POSTRES);
+fprintf(masterScript, ' --mem=%dg', RAM_GB_PER_JOB_POSTRES);
+fprintf(masterScript, ' --error=\\"${postJobErrPathDump}\\"');
+fprintf(masterScript, ' --out=\\"${postJobOutPathDump}\\"');
+fprintf(masterScript, ' \\"${postJobScriptDump}\\"');
+fprintf(masterScript, '" >> "${postJobSubmitScript}"\n');
+
 fprintf(masterScript, 'chmod 770 "${postJobSubmitScript}"\n');
 
 fclose(masterScript);

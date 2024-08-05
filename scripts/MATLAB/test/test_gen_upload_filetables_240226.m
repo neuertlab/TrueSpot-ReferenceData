@@ -1,16 +1,16 @@
 %
 %%  !! UPDATE TO YOUR BASE DIR
-%BaseDir = 'D:\Users\hospelb\labdata\imgproc\imgproc';
-BaseDir = 'D:\usr\bghos\labdat\imgproc';
+BaseDir = 'D:\Users\hospelb\labdata\imgproc\imgproc';
+%BaseDir = 'D:\usr\bghos\labdat\imgproc';
 
-%ImgProcDir = 'D:\Users\hospelb\labdata\imgproc';
-ImgProcDir = 'D:\usr\bghos\labdat\imgproc';
+ImgProcDir = 'D:\Users\hospelb\labdata\imgproc';
+%ImgProcDir = 'D:\usr\bghos\labdat\imgproc';
 
-%ImgDir = 'C:\Users\hospelb\labdata\imgproc';
-ImgDir = 'D:\usr\bghos\labdat\imgproc';
+ImgDir = 'C:\Users\hospelb\labdata\imgproc';
+%ImgDir = 'D:\usr\bghos\labdat\imgproc';
 
-%StageDir = 'C:\Users\hospelb\labdata\biostudies_ftp';
-StageDir = 'D:\usr\bghos\labdat\biostudies_ftp';
+StageDir = 'C:\Users\hospelb\labdata\biostudies_ftp';
+%StageDir = 'D:\usr\bghos\labdat\biostudies_ftp';
 
 addpath('./core');
 addpath('./test');
@@ -18,7 +18,7 @@ addpath('./test/datadump');
 
 % ========================== General Context ==========================
 
-DateSuffix = '240320';
+DateSuffix = '240805';
 OutputDir = [BaseDir filesep 'upload'];
 ResultsDir = [BaseDir filesep 'data' filesep 'results'];
 
@@ -89,8 +89,10 @@ for t = 1:ImgTableCount
                 doCellSegEntry(fhStruct, image_table, r, analysis, supergroup);
             elseif strcmp(supergroup, 'mescE')
                 doCellSegEntry(fhStruct, image_table, r, analysis, supergroup);
+                doImageFileEntry(fhStruct, image_table, r, analysis, supergroup);
             elseif strcmp(supergroup, 'mescI')
                 doCellSegEntry(fhStruct, image_table, r, analysis, supergroup);
+                doImageFileEntry(fhStruct, image_table, r, analysis, supergroup);
             end
 
         end
@@ -637,6 +639,12 @@ function fhStruct = openOutputTables(dir)
 
     tpath = [dir filesep 'scProteinImages.tsv'];
     fhStruct.scProteinImages = openOutputTable(tpath, IMG_COMMON_COLS, []);
+
+    tpath = [dir filesep 'mescEImages.tsv'];
+    fhStruct.mescEImages = openOutputTable(tpath, IMG_COMMON_COLS, []);
+
+    tpath = [dir filesep 'mescIImages.tsv'];
+    fhStruct.mescIImages = openOutputTable(tpath, IMG_COMMON_COLS, []);
 
     tpath = [dir filesep 'simImages.tsv'];
     fhStruct.simImages = openOutputTable(tpath, IMG_COMMON_COLS, []);
