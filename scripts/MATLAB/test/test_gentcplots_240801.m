@@ -28,7 +28,7 @@ CLR_BLUEGREY2 = [0.553 0.737 0.788];
 
 TimeUnitName = 'min';
 
-XMAX = 75;
+XMAX = 100;
 YMAX = 0.5;
 BINSIZE = 5;
 
@@ -46,12 +46,14 @@ LI_NEUERT_CSV_PATH = 'D:\Users\hospelb\labdata\imgproc\imgproc\tables\LiNeuert_s
 %   3 - Non-nascent nucleus
 %   4 - Nascent nucleus
 
-SingleGene = 'STL1';
+SingleGene = 'HSP12';
 
 TargetGroups = {struct('name', SingleGene, 'baseColor', CLR_MAGENTA, 'txtype', 0) ...
                 struct('name', SingleGene, 'baseColor', CLR_GREEN, 'txtype', 2) ...
                 struct('name', SingleGene, 'baseColor', CLR_INDIGO, 'txtype', 1) ...
                 struct('name', SingleGene, 'baseColor', CLR_CYAN, 'txtype', 4)};
+
+JointPairs = [3,2; 3,4];
 
 % ========================== Process ==========================
 
@@ -227,7 +229,12 @@ end
 clear rr tt tpi tpCount ctStore ctvec sname
 
 figh = figure(1);
+clf;
 [plotter, figh] = plotter.render(figh);
+
+figh2 = figure(2);
+clf;
+[plotter, figh2] = plotter.renderJointProbHeatmap(figh2, JointPairs);
  
 % ========================== Helper Functions ==========================
 
