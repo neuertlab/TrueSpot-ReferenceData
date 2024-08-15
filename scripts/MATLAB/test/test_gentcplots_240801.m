@@ -6,12 +6,19 @@ addpath('./plots');
 
 % ========================== I/O Info ==========================
 
-ImportDir = 'D:\Users\hospelb\labdata\RNAFISH\Analysis';
+% ImportDir = 'D:\Users\hospelb\labdata\RNAFISH\Analysis';
+% ImportFiles = {'JA20240510\cellCounts.tsv' 'JA20240514\cellCounts.tsv' ...
+%     'JA20240604\cellCounts.tsv' 'JA20240606\cellCounts.tsv'};
+
+ImportDir = 'D:\Users\hospelb\labdata\RNAFISH\ThPrecise';
 ImportFiles = {'JA20240510\cellCounts.tsv' 'JA20240514\cellCounts.tsv' ...
     'JA20240604\cellCounts.tsv' 'JA20240606\cellCounts.tsv'};
 
+RepNames = {'2024.05.10 0.4M' '2024.05.14 0.4M' '2024.06.04 0.4M' '2024.06.06 0.4M'};
+
 % ========================== Some Neat Colors ==========================
 
+CLR_RED1 = [0.627 0.102 0.055];
 CLR_MAGENTA = [1.000 0.000 1.000];
 CLR_INDIGO = [0.231 0.212 0.737];
 CLR_GREEN = [0.325 0.737 0.212];
@@ -20,6 +27,10 @@ CLR_CYAN = [0.000 0.800 0.800];
 CLR_GREY1 = [0.678 0.678 0.678];
 CLR_GREY2 = [0.400 0.400 0.400];
 CLR_GREY3 = [0.222 0.222 0.222];
+
+CLR_ORANGE1 = [0.898 0.694 0.176];
+CLR_ORANGE2 = [0.737 0.659 0.463];
+CLR_ORANGE3 = [0.467 0.388 0.184];
 
 CLR_BLUEGREY1 = [0.000 0.443 0.569];
 CLR_BLUEGREY2 = [0.553 0.737 0.788];
@@ -30,11 +41,12 @@ TimeUnitName = 'min';
 
 XMAX = 100;
 YMAX = 0.5;
-BINSIZE = 5;
+BINSIZE = 10;
+HEATMAP_BINSIZE = 5;
 
-AUTO_X = false; %If this is set, don't use XMAX
+AUTO_X = true; %If this is set, don't use XMAX
 
-INCL_LI_NEUERT = true;
+INCL_LI_NEUERT = false;
 LI_NEUERT_CSV_PATH = 'D:\Users\hospelb\labdata\imgproc\imgproc\tables\LiNeuert_sctc.csv';
 
 % ========================== Groups to Show ==========================
@@ -47,13 +59,31 @@ LI_NEUERT_CSV_PATH = 'D:\Users\hospelb\labdata\imgproc\imgproc\tables\LiNeuert_s
 %   4 - Nascent nucleus
 
 SingleGene = 'HSP12';
+CompareGene = [];
 
-TargetGroups = {struct('name', SingleGene, 'baseColor', CLR_MAGENTA, 'txtype', 0) ...
-                struct('name', SingleGene, 'baseColor', CLR_GREEN, 'txtype', 2) ...
-                struct('name', SingleGene, 'baseColor', CLR_INDIGO, 'txtype', 1) ...
-                struct('name', SingleGene, 'baseColor', CLR_CYAN, 'txtype', 4)};
+TargetGroups = {struct('name', SingleGene, 'baseColor', CLR_RED1, 'txtype', 0) ...
+                struct('name', SingleGene, 'baseColor', CLR_RED1, 'txtype', 2) ...
+                struct('name', SingleGene, 'baseColor', CLR_RED1, 'txtype', 1) ...
+                struct('name', SingleGene, 'baseColor', CLR_RED1, 'txtype', 4)};
 
-JointPairs = [3,2; 3,4];
+LoadGroups = {struct('name', CompareGene, 'baseColor', CLR_INDIGO, 'txtype', 0) ...
+              struct('name', CompareGene, 'baseColor', CLR_INDIGO, 'txtype', 2) ...
+              struct('name', CompareGene, 'baseColor', CLR_INDIGO, 'txtype', 1) ...
+              struct('name', CompareGene, 'baseColor', CLR_INDIGO, 'txtype', 4)};
+
+AllTargets = TargetGroups;
+GeneCompPairs = [];
+
+JointPairs = { ProbDistroPlots.genJointPairStruct(3, 2, false), ...
+               ProbDistroPlots.genJointPairStruct(3, 4, false), ... 
+               ProbDistroPlots.genJointPairStruct(3, 2, true), ...
+               ProbDistroPlots.genJointPairStruct(3, 4, true), ...
+             };
+
+if ~isempty(CompareGene)
+    AllTargets = [TargetGroups LoadGroups];
+    GeneCompPairs = [1,1; 2,2; 3,3; 4,4];
+end
 
 % ========================== Process ==========================
 
@@ -62,13 +92,14 @@ JointPairs = [3,2; 3,4];
 %Just collect counts for each and store in big cell table
 
 fileCount = size(ImportFiles, 2);
+loadTargetCount = size(AllTargets, 2);
 targetCount = size(TargetGroups, 2);
 impLiNeuert = INCL_LI_NEUERT & (strcmp(SingleGene, 'STL1') | strcmp(SingleGene, 'CTT1'));
 
 if impLiNeuert
-    countStorage = cell(fileCount + 5, targetCount);
+    countStorage = cell(fileCount + 5, loadTargetCount);
 else
-    countStorage = cell(fileCount, targetCount);
+    countStorage = cell(fileCount, loadTargetCount);
 end
 utp = [];
 
@@ -81,9 +112,9 @@ for ff = 1:fileCount
     if isempty(fTable); continue; end
 
     %For each target...
-    for tt = 1:targetCount
+    for tt = 1:loadTargetCount
         ctStore = struct();
-        myTarget = TargetGroups{tt};
+        myTarget = AllTargets{tt};
         %Filter table down to just target
 
         trecords = fTable(strcmp(fTable{:, 'TARGET'}, myTarget.name),:);
@@ -92,7 +123,10 @@ for ff = 1:fileCount
         %Determine timepoint assignments
         [timeVal, ~] = tpFromName(trecords{:, 'x_SRCIMGNAME'}, TimeUnitName);
         uniqueTimes = unique(timeVal');
-        utp = unique([utp uniqueTimes]);
+
+        if tt <= targetCount
+            utp = unique([utp uniqueTimes]);
+        end
 
         localTPCount = size(uniqueTimes, 2);
         for tpi = 1:localTPCount
@@ -150,9 +184,11 @@ end
 %https://stackoverflow.com/questions/3400515/how-do-i-detect-empty-cells-in-a-cell-array
 usedCells = ~cellfun('isempty', countStorage);
 rowUsed = sum(usedCells, 2);
-countStorage = countStorage((rowUsed > 0), :);
+keepRows = (rowUsed > 0);
+useReplNames = RepNames(keepRows(1:size(RepNames,2), 1)');
+countStorage = countStorage(keepRows, :);
 repCount = size(countStorage, 1);
-clear usedCells rowUsed
+clear usedCells rowUsed keepRows
 
 %Prep plotter settings
 plotter = ProbDistroPlots;
@@ -161,6 +197,7 @@ plotter.yMax = YMAX;
 plotter.binSize = BINSIZE;
 plotter.timeUnit = TimeUnitName;
 
+namedReplCount = size(useReplNames, 2);
 plotter.timePoints = utp;
 plotter.targets = cell(1, targetCount);
 for tt = 1:targetCount
@@ -180,12 +217,16 @@ for tt = 1:targetCount
     end
     targInfo.colors = getColorsFromBase(myTarget.baseColor, repCount);
 
+    for rn = 1:namedReplCount
+        targInfo.repNames{rn} = useReplNames{rn};
+    end
+
     if impLiNeuert
         %Add LiNeuert styling to last 5 reps.
         rr = repCount - 4;
         for j = 1:2
             targInfo.repNames{rr} = ['0.2M R' num2str(j)];
-            targInfo.lineStyle{rr} = '--';
+            targInfo.lineStyle{rr} = ':';
             if j == 1
                 targInfo.colors(rr, :) = CLR_BLUEGREY1;
             elseif j == 2
@@ -198,11 +239,11 @@ for tt = 1:targetCount
             targInfo.repNames{rr} = ['0.4M R' num2str(j)];
             targInfo.lineStyle{rr} = '--';
             if j == 1
-                targInfo.colors(rr, :) = CLR_GREY1;
+                targInfo.colors(rr, :) = CLR_ORANGE1;
             elseif j == 2
-                targInfo.colors(rr, :) = CLR_GREY2;
+                targInfo.colors(rr, :) = CLR_ORANGE2;
             elseif j == 3
-                targInfo.colors(rr, :) = CLR_GREY3;
+                targInfo.colors(rr, :) = CLR_ORANGE3;
             end
             rr = rr + 1;
         end
@@ -234,7 +275,62 @@ clf;
 
 figh2 = figure(2);
 clf;
+plotter.binSize = HEATMAP_BINSIZE;
 [plotter, figh2] = plotter.renderJointProbHeatmap(figh2, JointPairs);
+
+%To get the multigene heatmaps, reload plotter and render a new jointprob
+if ~isempty(GeneCompPairs)
+    plotter.targets = cell(1, loadTargetCount);
+    for tt = 1:loadTargetCount
+        myTarget = AllTargets{tt};
+        targInfo = ProbDistroPlots.genTargetInfoStruct(repCount);
+        targInfo.name = myTarget.name;
+        if myTarget.txtype == 0
+            targInfo.subtitle = 'Total';
+        elseif myTarget.txtype == 1
+            targInfo.subtitle = 'Nucleus';
+        elseif myTarget.txtype == 2
+            targInfo.subtitle = 'Cytoplasm';
+        elseif myTarget.txtype == 3
+            targInfo.subtitle = 'Nucleus (Mature)';
+        elseif myTarget.txtype == 4
+            targInfo.subtitle = 'Nucleus (Nascent)';
+        end
+        targInfo.colors = getColorsFromBase(myTarget.baseColor, repCount);
+
+        for rn = 1:namedReplCount
+            targInfo.repNames{rn} = useReplNames{rn};
+        end
+
+        plotter.targets{tt} = targInfo;
+    end
+    plotter = plotter.reallocateDataMtx();
+
+    tpCount = size(utp, 2);
+    for rr = repCount:-1:1
+        for tt = 1:loadTargetCount
+            ctStore = countStorage{rr, tt};
+            for tpi = 1:tpCount
+                sname = getTPStr(utp(tpi), TimeUnitName);
+                if isfield(ctStore, sname)
+                    ctvec = ctStore.(sname).ctvec;
+                    plotter = plotter.loadRawCountSet(ctvec, tt, tpi, rr);
+                end
+            end
+        end
+    end
+
+    pairCount = size(GeneCompPairs, 1);
+    mgenePairs = cell(1, pairCount);
+    for i = 1:pairCount
+        mgenePairs{i} = ProbDistroPlots.genJointPairStruct(...
+            GeneCompPairs(i,1), GeneCompPairs(i,2) + targetCount, true);
+    end
+
+    figh3 = figure(3);
+    clf;
+    [plotter, figh3] = plotter.renderJointProbHeatmap(figh3, mgenePairs);
+end
  
 % ========================== Helper Functions ==========================
 
