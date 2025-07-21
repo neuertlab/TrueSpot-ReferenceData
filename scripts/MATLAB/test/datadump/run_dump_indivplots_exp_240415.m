@@ -14,7 +14,7 @@ addpath('./test');
 
 % ========================== Constants ==========================
 
-ROW_INDEX =  98;
+ROW_INDEX =  393;
 
 DUMP_SPOTCOUNTS_NOLOG = true;
 DUMP_SPOTCOUNTS = true;
@@ -29,7 +29,7 @@ DB_TYPE_2DALT = 4;
 DB_TYPE = DB_TYPE_NORMAL;
 REFSET_ID = 'BH';
 
-USE_TRIMMED = true;
+USE_TRIMMED = false;
 
 COLOR_HB = [0.667 0.220 0.220];
 COLOR_BF = [0.231 0.231 0.702]; %#3b3bb3

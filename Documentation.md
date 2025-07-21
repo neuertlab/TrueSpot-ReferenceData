@@ -358,3 +358,6 @@ Both the normalized threshold plots and the CoV plots were generated in `th_stat
 All yeast time course "ON Proportion" and "Average per ON" plots over time were generated in `yeast_tc_stats.R`, including those comparing batch fixed and image variable threshold application. The plots used for the main figure were cleaned up more than the plots used in the supplementary figures, which retain more ggplot/R features such as the grey background grid. 
 
 The time course ON Proportion & Avg. Per ON plots generated from maximum intensity projection data were generated using code in `expResults.R` (which was a modified copypaste of the above code anyway).
+
+### Image View Figure Generation
+The callset comparison over image figures were generated using `scripts/MATLAB/test/datadump/figgen_compimg1_250627.m`. Only four image group representatives were rendered to a figure at once so that the images were large enough to see clearly. The table used that specfied the input paths and render regions can be found at `tables/figImages.csv`. Final figures were rotated right 90 degrees and mirrored across the vertical axis relative to MATLAB output.

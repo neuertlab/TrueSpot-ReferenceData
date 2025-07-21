@@ -14,7 +14,7 @@ addpath('./test');
 
 % ========================== Constants ==========================
 
-ROW_INDEX =  76;
+ROW_INDEX = 98;
 
 DUMP_SPOTCOUNTS_NOLOG = true;
 DUMP_SPOTCOUNTS = true;
@@ -44,8 +44,8 @@ ResultsDir = [BaseDir filesep 'data' filesep 'results'];
 % ========================== Read Table ==========================
 
 %InputTablePath = [BaseDir filesep 'test_images_simytc.csv'];
-%InputTablePath = [BaseDir filesep 'test_images_simvarmass.csv'];
-InputTablePath = [BaseDir filesep 'test_images.csv'];
+InputTablePath = [BaseDir filesep 'test_images_simvarmass.csv'];
+%InputTablePath = [BaseDir filesep 'test_images.csv'];
 
 image_table = testutil_opentable(InputTablePath);
 

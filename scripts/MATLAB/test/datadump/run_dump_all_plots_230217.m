@@ -66,7 +66,7 @@ for i = START_INDEX:END_INDEX
 %     end
 
     if DUMP_SPOTCOUNTS
-        figpath = [spc_figdir filesep 'spc__' myname '.png'];
+        figpath = [spc_figdir filesep 'spc__' myname '.svg'];
         %fig_handle = GenMultiTool_SpotPlot(image_analyses(i).analysis);
         fig_handle = GenMultiTool_SpotPlot(analysis);
         saveas(fig_handle, figpath);

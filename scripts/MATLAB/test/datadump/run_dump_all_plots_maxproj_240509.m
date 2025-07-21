@@ -14,15 +14,15 @@ addpath('./test');
 
 % ========================== Constants ==========================
 
-START_INDEX = 273;
-END_INDEX = 946;
+START_INDEX = 243;
+END_INDEX = 272;
 
 DUMP_SPOTCOUNTS = true;
 DUMP_FSCORES = false;
 DUMP_PRC = false;
 
-Z_MIN = 10;
-Z_MAX = 16;
+Z_MIN = 0;
+Z_MAX = 0;
 
 % ========================== Other Paths ==========================
 
@@ -81,7 +81,7 @@ for i = START_INDEX:END_INDEX
     %end
 
     if DUMP_SPOTCOUNTS
-        figpath = [spc_figdir filesep 'spc__' myname '_' zminstr '_' zmaxstr '_maxproj.png'];
+        figpath = [spc_figdir filesep 'spc__' myname '_' zminstr '_' zmaxstr '_maxproj.svg'];
         %fig_handle = GenMultiTool_SpotPlot(image_analyses(i).analysis);
         fig_handle = GenMultiTool_SpotPlot_MaxProj(analysis, Z_MIN, Z_MAX);
         saveas(fig_handle, figpath);
