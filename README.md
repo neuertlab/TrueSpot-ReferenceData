@@ -1,5 +1,5 @@
 # TrueSpot Benchmarking Data Repository
-This repository is for scripts, figures, and smaller data tables used for benchmarking RNA-FISH spot detection tools as described in Hospelhorn, et al. 2024. Image stacks and large result files are hosted elsewhere, linked below.
+This repository is for scripts, figures, and smaller data tables used for benchmarking RNA-FISH spot detection tools as described in Hospelhorn, et al. 2025. Image stacks and large result files are hosted elsewhere, linked below.
 
 ## Contents
 The included `Documentation.md` file describes the processes, data tables, and scripts used for various analyses in more detail. 
