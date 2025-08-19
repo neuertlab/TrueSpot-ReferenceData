@@ -14,10 +14,10 @@ The `scripts` subdirectory contains code used for running tools for benchmarking
 Large data files and file collections used for benchmarking are not hosted in this repo due to their size. Instead, we provide links for them here.
 
 ### Image Stacks
-* [Yeast time course](https://doi.org/10.17867/10000118) [(Li & Neuert 2019)](https://www.nature.com/articles/s41597-019-0106-6)
+* [Yeast time course](https://doi.org/10.17867/10000118) ([Li & Neuert 2019](https://www.nature.com/articles/s41597-019-0106-6))
 * [Yeast Msb2-GFP & Opy2-GFP](https://www.ebi.ac.uk/biostudies/studies/S-BIAD1316) (Hospelhorn, et al. 2025)
 * [mESC Xist, Tsix, & Histone](https://www.ebi.ac.uk/biostudies/studies/S-BIAD1316) ([Kesler, et al. 2025](https://pubmed.ncbi.nlm.nih.gov/40328749/))
-* Munsky lab HeLa images [(Vo, et al. 2023)](https://www.frontiersin.org/articles/10.3389/fcell.2023.1133994/full) - Available from Munsky lab upon request.
+* Munsky lab HeLa images ([Vo, et al. 2023](https://www.frontiersin.org/articles/10.3389/fcell.2023.1133994/full)) - Available from Munsky lab upon request.
 * [Neuert lab simulated images](https://www.ebi.ac.uk/biostudies/studies/S-BIAD1316) (Hospelhorn, et al. 2025)
 * RS-FISH benchmarking set [(Bahry, et al. 2022)](https://www.nature.com/articles/s41592-022-01669-y)
 
